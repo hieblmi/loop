@@ -82,6 +82,8 @@ type ManagerConfig struct {
 
 	// Signer is the signer client that is used to sign transactions.
 	Signer lndclient.SignerClient
+
+	Store *SqlStore
 }
 
 // newWithdrawalRequest is used to send withdrawal request to the manager main
@@ -621,7 +623,7 @@ func (m *Manager) handleWithdrawal(ctx context.Context,
 					int32(m.initiationHeight.Load()),
 				)
 			select {
-			case <-confChan:
+			case tx := <-confChan:
 				err = m.cfg.DepositManager.TransitionDeposits(
 					ctx, deposits, deposit.OnWithdrawn,
 					deposit.Withdrawn,
@@ -636,6 +638,11 @@ func (m *Manager) handleWithdrawal(ctx context.Context,
 				m.mu.Lock()
 				delete(m.finalizedWithdrawalTxns, txHash)
 				m.mu.Unlock()
+
+				m.cfg.Store.CreateWithdrawal(
+					ctx, tx.Tx, tx.BlockHeight, deposits,
+					addrParams.PkScript,
+				)
 
 			case err := <-errChan:
 				log.Errorf("Error waiting for confirmation: %v",
