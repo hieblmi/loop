@@ -131,7 +131,14 @@ var RequiredPermissions = map[string][]bakery.Op{
 	}},
 	"/looprpc.SwapClient/StaticAddressLoopIn": {{
 		Entity: "swap",
-		Action: "read",
+		Action: "execute",
+	}, {
+		Entity: "loop",
+		Action: "in",
+	}},
+	"/looprpc.SwapClient/StaticOpenChannel": {{
+		Entity: "swap",
+		Action: "execute",
 	}, {
 		Entity: "loop",
 		Action: "in",
