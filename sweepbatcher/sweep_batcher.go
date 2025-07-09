@@ -125,6 +125,9 @@ type SweepInfo struct {
 	// value should be stable for a sweep. Currently presigned and
 	// non-presigned sweeps never appear in the same batch.
 	IsPresigned bool
+
+	// Change is an optional change output of the sweep.
+	Change *wire.TxOut
 }
 
 // SweepFetcher is used to get details of a sweep.
@@ -713,7 +716,8 @@ func (b *Batcher) Run(ctx context.Context) error {
 // swap. The order of sweeps is important. The first sweep serves as
 // primarySweepID if the group starts a new batch.
 func (b *Batcher) PresignSweepsGroup(ctx context.Context, inputs []Input,
-	sweepTimeout int32, destAddress btcutil.Address) error {
+	sweepTimeout int32, destAddress btcutil.Address,
+	changeOutput *wire.TxOut) error {
 
 	if len(inputs) == 0 {
 		return fmt.Errorf("no inputs passed to PresignSweepsGroup")
@@ -742,6 +746,7 @@ func (b *Batcher) PresignSweepsGroup(ctx context.Context, inputs []Input,
 			outpoint: input.Outpoint,
 			value:    input.Value,
 			timeout:  sweepTimeout,
+			change:   changeOutput,
 		}
 	}
 
@@ -1564,6 +1569,7 @@ func (b *Batcher) loadSweep(ctx context.Context, swapHash lntypes.Hash,
 		minFeeRate:             minFeeRate,
 		nonCoopHint:            s.NonCoopHint,
 		presigned:              s.IsPresigned,
+		change:                 s.Change,
 	}, nil
 }
 
