@@ -125,6 +125,9 @@ type sweep struct {
 
 	// presigned is set, if the sweep should be handled in presigned mode.
 	presigned bool
+
+	// change is the optional change output of the sweep.
+	change *wire.TxOut
 }
 
 // batchState is the state of the batch.
@@ -1238,6 +1241,7 @@ func (b *batch) createPsbt(unsignedTx *wire.MsgTx, sweeps []sweep) ([]byte,
 // constructUnsignedTx creates unsigned tx from the sweeps, paying to the addr.
 // It also returns absolute fee (from weight and clamped).
 func constructUnsignedTx(sweeps []sweep, address btcutil.Address,
+	changeOutputs map[*wire.TxOut]btcutil.Address,
 	currentHeight int32, feeRate chainfee.SatPerKWeight) (*wire.MsgTx,
 	lntypes.WeightUnit, btcutil.Amount, btcutil.Amount, error) {
 
@@ -1297,6 +1301,20 @@ func constructUnsignedTx(sweeps []sweep, address btcutil.Address,
 			"failed: %w", err)
 	}
 
+	// Add the optional change outputs to weight estimates.
+	if len(changeOutputs) > 0 {
+		for _, addr := range changeOutputs {
+			// Add the output to weight estimates.
+			err = sweeppkg.AddOutputEstimate(
+				&weightEstimate, addr,
+			)
+			if err != nil {
+				return nil, 0, 0, 0, fmt.Errorf("sweep."+
+					"AddOutputEstimate failed: %w", err)
+			}
+		}
+	}
+
 	// Keep track of the total amount this batch is sweeping back.
 	batchAmt := btcutil.Amount(0)
 	for _, sweep := range sweeps {
@@ -1318,11 +1336,29 @@ func constructUnsignedTx(sweeps []sweep, address btcutil.Address,
 	fee := clampBatchFee(feeForWeight, batchAmt)
 
 	// Add the batch transaction output, which excludes the fees paid to
-	// miners.
-	batchTx.AddTxOut(&wire.TxOut{
-		PkScript: batchPkScript,
-		Value:    int64(batchAmt - fee),
-	})
+	// miners. Reduce the amount by the sum of change outputs, if any.
+	if len(changeOutputs) == 0 {
+		batchTx.AddTxOut(&wire.TxOut{
+			PkScript: batchPkScript,
+			Value:    int64(batchAmt - fee),
+		})
+	} else {
+		// Reduce the batch output by the sum of change outputs.
+		var sumChange int64
+		for change := range changeOutputs {
+			sumChange += change.Value
+		}
+		batchTx.AddTxOut(&wire.TxOut{
+			PkScript: batchPkScript,
+			Value:    int64(batchAmt-fee) - sumChange,
+		})
+		for txOut := range changeOutputs {
+			batchTx.AddTxOut(&wire.TxOut{
+				PkScript: txOut.PkScript,
+				Value:    txOut.Value,
+			})
+		}
+	}
 
 	return batchTx, weight, feeForWeight, fee, nil
 }
@@ -1396,9 +1432,13 @@ func (b *batch) publishMixedBatch(ctx context.Context) (btcutil.Amount, error,
 			attempt)
 
 		// Construct unsigned batch transaction.
-		var err error
+		var (
+			err           error
+			changeOutputs = make(map[*wire.TxOut]btcutil.Address)
+		)
 		tx, weight, feeForWeight, fee, err = constructUnsignedTx(
-			sweeps, address, b.currentHeight, b.rbfCache.FeeRate,
+			sweeps, address, changeOutputs, b.currentHeight,
+			b.rbfCache.FeeRate,
 		)
 		if err != nil {
 			return 0, fmt.Errorf("failed to construct tx: %w", err),

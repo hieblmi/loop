@@ -1011,6 +1011,7 @@ func TestPresign(t *testing.T) {
 				ctx, tc.presigner, tc.destAddr,
 				tc.primarySweepID, tc.sweeps,
 				tc.nextBlockFeeRate,
+				&chaincfg.RegressionNetParams,
 			)
 			if tc.wantErr != "" {
 				require.Error(t, err)
@@ -1460,7 +1461,8 @@ func TestCheckSignedTx(t *testing.T) {
 			},
 			inputAmt:    3_000_000,
 			minRelayFee: 253,
-			wantErr:     "unsigned tx has 2 outputs, want 1",
+			wantErr: "unsigned tx has 2 outputs, signed tx " +
+				"has 1 outputs, should be equal",
 		},
 
 		{
@@ -1517,7 +1519,8 @@ func TestCheckSignedTx(t *testing.T) {
 			},
 			inputAmt:    3_000_000,
 			minRelayFee: 253,
-			wantErr:     "the signed tx has 2 outputs, want 1",
+			wantErr: "unsigned tx has 1 outputs, signed tx " +
+				"has 2 outputs, should be equal",
 		},
 
 		{
@@ -1639,6 +1642,127 @@ func TestCheckSignedTx(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 			}
+		})
+	}
+}
+
+// TestGetChangeOutputs tests that the change aggregation across sweeps works as
+// intended. Each sweep of a sweep group should have a pointer to the same
+// change output which is aggregated in getChangeOutput.
+func TestGetChangeOutputs(t *testing.T) {
+	// Prepare the necessary data for test cases.
+	op1 := wire.OutPoint{
+		Hash:  chainhash.Hash{1, 1, 1},
+		Index: 1,
+	}
+	op2 := wire.OutPoint{
+		Hash:  chainhash.Hash{2, 2, 2},
+		Index: 2,
+	}
+	op3 := wire.OutPoint{
+		Hash:  chainhash.Hash{3, 3, 3},
+		Index: 3,
+	}
+
+	batchPkScript, err := txscript.PayToAddrScript(destAddr)
+	require.NoError(t, err)
+
+	changeOutput1 := &wire.TxOut{
+		Value:    100_000,
+		PkScript: batchPkScript,
+	}
+	changeOutput2 := &wire.TxOut{
+		Value:    200_000,
+		PkScript: batchPkScript,
+	}
+
+	cases := []struct {
+		name        string
+		sweeps      []sweep
+		wantOutputs map[*wire.TxOut]btcutil.Address
+		wantErr     string
+	}{
+		{
+			name: "no change",
+			sweeps: []sweep{
+				{
+					outpoint: op1,
+					value:    1_000_000,
+					change:   nil,
+				},
+			},
+			wantOutputs: map[*wire.TxOut]btcutil.Address{},
+		},
+		{
+			name: "single sweep, single change",
+			sweeps: []sweep{
+				{
+					outpoint: op1,
+					value:    1_000_000,
+					change:   changeOutput1,
+				},
+			},
+			wantOutputs: map[*wire.TxOut]btcutil.Address{
+				changeOutput1: destAddr,
+			},
+		},
+		{
+			name: "double sweep, single change",
+			sweeps: []sweep{
+				{
+					outpoint: op1,
+					value:    1_000_000,
+					change:   changeOutput1,
+				},
+				{
+					outpoint: op2,
+					value:    1_000_000,
+					change:   changeOutput1,
+				},
+			},
+			wantOutputs: map[*wire.TxOut]btcutil.Address{
+				changeOutput1: destAddr,
+			},
+		},
+		{
+			name: "double sweep, double change",
+			sweeps: []sweep{
+				{
+					outpoint: op1,
+					value:    1_000_000,
+					change:   changeOutput1,
+				},
+				{
+					outpoint: op2,
+					value:    1_000_000,
+					change:   changeOutput1,
+				},
+				{
+					outpoint: op3,
+					value:    1_000_000,
+					change:   changeOutput2,
+				},
+			},
+			wantOutputs: map[*wire.TxOut]btcutil.Address{
+				changeOutput1: destAddr,
+				changeOutput2: destAddr,
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			changeOutputs, err := getChangeOutputs(
+				tc.sweeps, &chaincfg.RegressionNetParams,
+			)
+			if tc.wantErr != "" {
+				require.Error(t, err)
+				require.ErrorContains(t, err, tc.wantErr)
+			} else {
+				require.NoError(t, err)
+			}
+
+			require.Equal(t, tc.wantOutputs, changeOutputs)
 		})
 	}
 }

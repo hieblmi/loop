@@ -51,6 +51,7 @@ func ensurePresigned(ctx context.Context, newSweeps []*sweep,
 			outpoint:  s.outpoint,
 			value:     s.value,
 			presigned: s.presigned,
+			change:    s.change,
 		}
 	}
 
@@ -66,6 +67,12 @@ func ensurePresigned(ctx context.Context, newSweeps []*sweep,
 		return fmt.Errorf("failed to find destination address: %w", err)
 	}
 
+	// Get the change outputs for each sweep group.
+	changeOutputs, err := getChangeOutputs(sweeps, chainParams)
+	if err != nil {
+		return fmt.Errorf("failed to get change outputs: %w", err)
+	}
+
 	// Set LockTime to 0. It is not critical.
 	const currentHeight = 0
 
@@ -73,7 +80,7 @@ func ensurePresigned(ctx context.Context, newSweeps []*sweep,
 	const feeRate = chainfee.FeePerKwFloor
 
 	tx, _, _, _, err := constructUnsignedTx(
-		sweeps, destAddr, currentHeight, feeRate,
+		sweeps, destAddr, changeOutputs, currentHeight, feeRate,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to construct unsigned tx "+
@@ -257,7 +264,7 @@ func (b *batch) presign(ctx context.Context, newSweeps []*sweep) error {
 
 		err = presign(
 			ctx, b.cfg.presignedHelper, destAddr, primarySweepID,
-			sweeps, nextBlockFeeRate,
+			sweeps, nextBlockFeeRate, b.cfg.chainParams,
 		)
 		if err != nil {
 			return fmt.Errorf("failed to presign a transaction "+
@@ -299,7 +306,8 @@ type presigner interface {
 // 10x of the current next block feerate.
 func presign(ctx context.Context, presigner presigner, destAddr btcutil.Address,
 	primarySweepID wire.OutPoint, sweeps []sweep,
-	nextBlockFeeRate chainfee.SatPerKWeight) error {
+	nextBlockFeeRate chainfee.SatPerKWeight,
+	chainParams *chaincfg.Params) error {
 
 	if presigner == nil {
 		return fmt.Errorf("presigner is not installed")
@@ -328,6 +336,12 @@ func presign(ctx context.Context, presigner presigner, destAddr btcutil.Address,
 		return fmt.Errorf("timeout is invalid: %d", timeout)
 	}
 
+	// Get the change outputs of each sweep group.
+	changeOutputs, err := getChangeOutputs(sweeps, chainParams)
+	if err != nil {
+		return fmt.Errorf("failed to get change outputs: %w", err)
+	}
+
 	// Go from the floor (1.01 sat/vbyte) to 2k sat/vbyte with step of 1.2x.
 	const (
 		start            = chainfee.FeePerKwFloor
@@ -353,7 +367,7 @@ func presign(ctx context.Context, presigner presigner, destAddr btcutil.Address,
 	for fr := start; fr <= stop; fr = (fr * factorPPM) / 1_000_000 {
 		// Construct an unsigned transaction for this fee rate.
 		tx, _, feeForWeight, fee, err := constructUnsignedTx(
-			sweeps, destAddr, currentHeight, fr,
+			sweeps, destAddr, changeOutputs, currentHeight, fr,
 		)
 		if err != nil {
 			return fmt.Errorf("failed to construct unsigned tx "+
@@ -438,9 +452,15 @@ func (b *batch) publishPresigned(ctx context.Context) (btcutil.Amount, error,
 			err), false
 	}
 
+	changeOutputs, err := getChangeOutputs(sweeps, b.cfg.chainParams)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get change outputs: %w", err),
+			false
+	}
+
 	// Construct unsigned batch transaction.
 	tx, weight, _, fee, err := constructUnsignedTx(
-		sweeps, address, currentHeight, feeRate,
+		sweeps, address, changeOutputs, currentHeight, feeRate,
 	)
 	if err != nil {
 		return 0, fmt.Errorf("failed to construct tx: %w", err),
@@ -493,10 +513,12 @@ func (b *batch) publishPresigned(ctx context.Context) (btcutil.Amount, error,
 	signedFeeRate := chainfee.NewSatPerKWeight(fee, realWeight)
 
 	numSweeps := len(tx.TxIn)
+	numChange := len(tx.TxOut) - 1
 	b.Infof("attempting to publish custom signed tx=%v, desiredFeerate=%v,"+
-		" signedFeeRate=%v, weight=%v, fee=%v, sweeps=%d, destAddr=%s",
+		" signedFeeRate=%v, weight=%v, fee=%v, sweeps=%d, "+
+		"changeOutputs=%d, destAddr=%s",
 		txHash, feeRate, signedFeeRate, realWeight, fee, numSweeps,
-		address)
+		numChange, address)
 	b.debugLogTx("serialized batch", tx)
 
 	// Publish the transaction.
@@ -557,6 +579,46 @@ func getPresignedSweepsDestAddr(ctx context.Context, helper destPkScripter,
 	return address, nil
 }
 
+// getChangeOutputs retrieves the change output references of each sweep and
+// de-duplicates them. The function must be used in presigned mode only.
+func getChangeOutputs(sweeps []sweep, chainParams *chaincfg.Params) (
+	map[*wire.TxOut]btcutil.Address, error) {
+
+	changeOutputs := make(map[*wire.TxOut]btcutil.Address)
+	for _, sweep := range sweeps {
+		// If the sweep has a change output, add it to the changeOutputs
+		// map to avoid duplicates.
+		if sweep.change == nil {
+			continue
+		}
+
+		// If the change output is already in the map, skip it.
+		if _, exists := changeOutputs[sweep.change]; exists {
+			continue
+		}
+
+		// Convert the change output's pkScript to an address.
+		changePkScript, err := txscript.ParsePkScript(
+			sweep.change.PkScript,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse change "+
+				"output pkScript: %w", err)
+		}
+
+		address, err := changePkScript.Address(chainParams)
+		if err != nil {
+			return nil, fmt.Errorf("pkScript.Address failed for "+
+				"pkScript %x returned for change output: %w",
+				sweep.change.PkScript, err)
+		}
+
+		changeOutputs[sweep.change] = address
+	}
+
+	return changeOutputs, nil
+}
+
 // CheckSignedTx makes sure that signedTx matches the unsignedTx. It checks
 // according to criteria specified in the description of PresignedHelper.SignTx.
 func CheckSignedTx(unsignedTx, signedTx *wire.MsgTx, inputAmt btcutil.Amount,
@@ -593,23 +655,31 @@ func CheckSignedTx(unsignedTx, signedTx *wire.MsgTx, inputAmt btcutil.Amount,
 	}
 
 	// Compare outputs.
-	if len(unsignedTx.TxOut) != 1 {
-		return fmt.Errorf("unsigned tx has %d outputs, want 1",
-			len(unsignedTx.TxOut))
-	}
-	if len(signedTx.TxOut) != 1 {
-		return fmt.Errorf("the signed tx has %d outputs, want 1",
+	if len(unsignedTx.TxOut) != len(signedTx.TxOut) {
+		return fmt.Errorf("unsigned tx has %d outputs, signed tx has "+
+			"%d outputs, should be equal", len(unsignedTx.TxOut),
 			len(signedTx.TxOut))
 	}
-	unsignedOut := unsignedTx.TxOut[0]
-	signedOut := signedTx.TxOut[0]
-	if !bytes.Equal(unsignedOut.PkScript, signedOut.PkScript) {
-		return fmt.Errorf("mismatch of output pkScript: %x, %x",
-			unsignedOut.PkScript, signedOut.PkScript)
+	for i, o := range unsignedTx.TxOut {
+		if !bytes.Equal(o.PkScript, signedTx.TxOut[i].PkScript) {
+			return fmt.Errorf("mismatch of output pkScript: %x, %x",
+				o.PkScript, signedTx.TxOut[i].PkScript)
+		}
+	}
+
+	// The first output is always the batch output.
+	// TODO(hieblmi): ensure this.
+	batchOutput := signedTx.TxOut[0]
+
+	// Calculate the total value of change outputs to help determine the
+	// transaction fee.
+	totalChangeValue := btcutil.Amount(0)
+	for i := 1; i < len(signedTx.TxOut); i++ {
+		totalChangeValue += btcutil.Amount(signedTx.TxOut[i].Value)
 	}
 
 	// Find the feerate of signedTx.
-	fee := inputAmt - btcutil.Amount(signedOut.Value)
+	fee := inputAmt - btcutil.Amount(batchOutput.Value) - totalChangeValue
 	weight := lntypes.WeightUnit(
 		blockchain.GetTransactionWeight(btcutil.NewTx(signedTx)),
 	)

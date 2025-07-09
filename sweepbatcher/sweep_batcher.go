@@ -751,7 +751,7 @@ func (b *Batcher) PresignSweepsGroup(ctx context.Context, inputs []Input,
 
 	return presign(
 		ctx, b.presignedHelper, destAddress, primarySweepID, sweeps,
-		nextBlockFeeRate,
+		nextBlockFeeRate, b.chainParams,
 	)
 }
 
