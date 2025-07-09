@@ -113,7 +113,7 @@ func (h *mockPresignedHelper) DestPkScript(ctx context.Context,
 }
 
 // SignTx tries to sign the transaction. If all the inputs are online, it signs
-// the exact transaction passed and adds it to presignedBatches. Otherwise it
+// the exact transaction passed and adds it to presignedBatches. Otherwise, it
 // looks for a transaction in presignedBatches satisfying the criteria.
 func (h *mockPresignedHelper) SignTx(ctx context.Context,
 	primarySweepID wire.OutPoint, tx *wire.MsgTx, inputAmt btcutil.Amount,
@@ -273,7 +273,7 @@ func testPresigned_forgotten_presign(t *testing.T,
 	presignedHelper.SetOutpointOnline(op1, false)
 	err := batcher.PresignSweepsGroup(
 		ctx, []Input{{Outpoint: op1, Value: 1_000_000}},
-		sweepTimeout, destAddr,
+		sweepTimeout, destAddr, nil,
 	)
 	require.Error(t, err)
 	require.ErrorContains(t, err, "offline")
@@ -350,7 +350,7 @@ func testPresigned_input1_offline_then_input2(t *testing.T,
 	presignedHelper.SetOutpointOnline(op1, true)
 	err = batcher.PresignSweepsGroup(
 		ctx, []Input{{Outpoint: op1, Value: 1_000_000}},
-		sweepTimeout, destAddr,
+		sweepTimeout, destAddr, nil,
 	)
 	require.NoError(t, err)
 
@@ -413,7 +413,7 @@ func testPresigned_input1_offline_then_input2(t *testing.T,
 	presignedHelper.SetOutpointOnline(op2, true)
 	err = batcher.PresignSweepsGroup(
 		ctx, []Input{{Outpoint: op2, Value: 2_000_000}},
-		sweepTimeout, destAddr,
+		sweepTimeout, destAddr, nil,
 	)
 	require.NoError(t, err)
 
@@ -520,7 +520,7 @@ func testPresigned_min_relay_fee(t *testing.T,
 	presignedHelper.SetOutpointOnline(op1, true)
 	err := batcher.PresignSweepsGroup(
 		ctx, []Input{{Outpoint: op1, Value: inputAmt}},
-		sweepTimeout, destAddr,
+		sweepTimeout, destAddr, nil,
 	)
 	require.NoError(t, err)
 
@@ -644,7 +644,7 @@ func testPresigned_two_inputs_one_goes_offline(t *testing.T,
 	presignedHelper.SetOutpointOnline(op1, true)
 	err = batcher.PresignSweepsGroup(
 		ctx, []Input{{Outpoint: op1, Value: 1_000_000}},
-		sweepTimeout, destAddr,
+		sweepTimeout, destAddr, nil,
 	)
 	require.NoError(t, err)
 	require.NoError(t, batcher.AddSweep(ctx, &sweepReq1))
@@ -670,7 +670,7 @@ func testPresigned_two_inputs_one_goes_offline(t *testing.T,
 	presignedHelper.SetOutpointOnline(op2, true)
 	err = batcher.PresignSweepsGroup(
 		ctx, []Input{{Outpoint: op2, Value: 2_000_000}},
-		sweepTimeout, destAddr,
+		sweepTimeout, destAddr, nil,
 	)
 	require.NoError(t, err)
 	require.NoError(t, batcher.AddSweep(ctx, &sweepReq2))
@@ -780,7 +780,7 @@ func testPresigned_first_publish_fails(t *testing.T,
 	presignedHelper.SetOutpointOnline(op1, true)
 	err = batcher.PresignSweepsGroup(
 		ctx, []Input{{Outpoint: op1, Value: 1_000_000}},
-		sweepTimeout, destAddr,
+		sweepTimeout, destAddr, nil,
 	)
 	require.NoError(t, err)
 	presignedHelper.SetOutpointOnline(op1, false)
@@ -903,7 +903,7 @@ func testPresigned_locktime(t *testing.T,
 	presignedHelper.SetOutpointOnline(op1, true)
 	err = batcher.PresignSweepsGroup(
 		ctx, []Input{{Outpoint: op1, Value: 1_000_000}},
-		sweepTimeout, destAddr,
+		sweepTimeout, destAddr, nil,
 	)
 	require.NoError(t, err)
 	presignedHelper.SetOutpointOnline(op1, false)
@@ -994,14 +994,18 @@ func testPresigned_presigned_group(t *testing.T,
 	presignedHelper.SetOutpointOnline(op2, false)
 
 	// An attempt to presign must fail.
-	err = batcher.PresignSweepsGroup(ctx, group1, sweepTimeout, destAddr)
+	err = batcher.PresignSweepsGroup(
+		ctx, group1, sweepTimeout, destAddr, nil,
+	)
 	require.ErrorContains(t, err, "some outpoint is offline")
 
 	// Enable both outpoints.
 	presignedHelper.SetOutpointOnline(op2, true)
 
 	// An attempt to presign must succeed.
-	err = batcher.PresignSweepsGroup(ctx, group1, sweepTimeout, destAddr)
+	err = batcher.PresignSweepsGroup(
+		ctx, group1, sweepTimeout, destAddr, nil,
+	)
 	require.NoError(t, err)
 
 	// Add the sweep, triggering the publish attempt.
@@ -1053,7 +1057,9 @@ func testPresigned_presigned_group(t *testing.T,
 	presignedHelper.SetOutpointOnline(op4, true)
 
 	// An attempt to presign must succeed.
-	err = batcher.PresignSweepsGroup(ctx, group2, sweepTimeout, destAddr)
+	err = batcher.PresignSweepsGroup(
+		ctx, group2, sweepTimeout, destAddr, nil,
+	)
 	require.NoError(t, err)
 
 	// Add the sweep. It should go to the same batch.
@@ -1107,7 +1113,9 @@ func testPresigned_presigned_group(t *testing.T,
 	presignedHelper.SetOutpointOnline(op6, true)
 
 	// An attempt to presign must succeed.
-	err = batcher.PresignSweepsGroup(ctx, group3, sweepTimeout, destAddr)
+	err = batcher.PresignSweepsGroup(
+		ctx, group3, sweepTimeout, destAddr, nil,
+	)
 	require.NoError(t, err)
 
 	// Add the sweep. It should go to the same batch.
@@ -1215,9 +1223,9 @@ func testPresigned_presigned_and_regular_sweeps(t *testing.T, store testStore,
 
 	setFeeRate(feeRateLow)
 
-	/////////////////////////////////////
+	// ///////////////////////////////////
 	// Create the first regular sweep. //
-	/////////////////////////////////////
+	// ///////////////////////////////////
 	swapHash1 := lntypes.Hash{1, 1, 1}
 	op1 := wire.OutPoint{
 		Hash:  chainhash.Hash{1, 1},
@@ -1264,9 +1272,9 @@ func testPresigned_presigned_and_regular_sweeps(t *testing.T, store testStore,
 	require.Len(t, tx1.TxIn, 1)
 	require.Len(t, tx1.TxOut, 1)
 
-	///////////////////////////////////////
+	// /////////////////////////////////////
 	// Create the first presigned sweep. //
-	///////////////////////////////////////
+	// /////////////////////////////////////
 	swapHash2 := lntypes.Hash{2, 2, 2}
 	op2 := wire.OutPoint{
 		Hash:  chainhash.Hash{2, 2},
@@ -1304,7 +1312,7 @@ func testPresigned_presigned_and_regular_sweeps(t *testing.T, store testStore,
 	presignedHelper.SetOutpointOnline(op2, true)
 	err = batcher.PresignSweepsGroup(
 		ctx, []Input{{Outpoint: op2, Value: 2_000_000}},
-		sweepTimeout, destAddr,
+		sweepTimeout, destAddr, nil,
 	)
 	require.NoError(t, err)
 	require.NoError(t, batcher.AddSweep(ctx, &sweepReq2))
@@ -1319,9 +1327,9 @@ func testPresigned_presigned_and_regular_sweeps(t *testing.T, store testStore,
 	require.Len(t, tx2.TxOut, 1)
 	require.Equal(t, op2, tx2.TxIn[0].PreviousOutPoint)
 
-	//////////////////////////////////////
+	// ////////////////////////////////////
 	// Create the second regular sweep. //
-	//////////////////////////////////////
+	// ////////////////////////////////////
 	swapHash3 := lntypes.Hash{3, 3, 3}
 	op3 := wire.OutPoint{
 		Hash:  chainhash.Hash{3, 3},
@@ -1359,9 +1367,9 @@ func testPresigned_presigned_and_regular_sweeps(t *testing.T, store testStore,
 	// Deliver sweep request to batcher.
 	require.NoError(t, batcher.AddSweep(ctx, &sweepReq3))
 
-	////////////////////////////////////////
+	// //////////////////////////////////////
 	// Create the second presigned sweep. //
-	////////////////////////////////////////
+	// //////////////////////////////////////
 	swapHash4 := lntypes.Hash{4, 4, 4}
 	op4 := wire.OutPoint{
 		Hash:  chainhash.Hash{4, 4},
@@ -1399,7 +1407,7 @@ func testPresigned_presigned_and_regular_sweeps(t *testing.T, store testStore,
 	presignedHelper.SetOutpointOnline(op4, true)
 	err = batcher.PresignSweepsGroup(
 		ctx, []Input{{Outpoint: op4, Value: 3_000_000}},
-		sweepTimeout, destAddr,
+		sweepTimeout, destAddr, nil,
 	)
 	require.NoError(t, err)
 	require.NoError(t, batcher.AddSweep(ctx, &sweepReq4))
@@ -1520,7 +1528,7 @@ func testPresigned_purging(t *testing.T, numSwaps, numConfirmedSwaps int,
 
 		// An attempt to presign must succeed.
 		err := batcher.PresignSweepsGroup(
-			ctx, group, sweepTimeout, destAddr,
+			ctx, group, sweepTimeout, destAddr, nil,
 		)
 		require.NoError(t, err)
 
@@ -1584,11 +1592,11 @@ func testPresigned_purging(t *testing.T, numSwaps, numConfirmedSwaps int,
 
 		// An attempt to presign must succeed.
 		err := batcher.PresignSweepsGroup(
-			ctx, group, sweepTimeout, destAddr,
+			ctx, group, sweepTimeout, destAddr, nil,
 		)
 		require.NoError(t, err)
 
-		// Add the sweep, triggering the publish attempt.
+		// Add the sweep, triggering the publishing attempt.
 		require.NoError(t, batcher.AddSweep(ctx, &SweepRequest{
 			SwapHash: swapHash,
 			Inputs:   group,

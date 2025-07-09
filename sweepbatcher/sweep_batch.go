@@ -125,6 +125,9 @@ type sweep struct {
 
 	// presigned is set, if the sweep should be handled in presigned mode.
 	presigned bool
+
+	// change is the optional change output of the sweep.
+	change *wire.TxOut
 }
 
 // batchState is the state of the batch.
@@ -1236,10 +1239,13 @@ func (b *batch) createPsbt(unsignedTx *wire.MsgTx, sweeps []sweep) ([]byte,
 }
 
 // constructUnsignedTx creates unsigned tx from the sweeps, paying to the addr.
-// It also returns absolute fee (from weight and clamped).
+// It also returns absolute fee (from weight and clamped). The main output is
+// the first output of the transaction, followed by an optional list of change
+// outputs.
 func constructUnsignedTx(sweeps []sweep, address btcutil.Address,
-	currentHeight int32, feeRate chainfee.SatPerKWeight) (*wire.MsgTx,
-	lntypes.WeightUnit, btcutil.Amount, btcutil.Amount, error) {
+	currentHeight int32, feeRate chainfee.SatPerKWeight) (
+	*wire.MsgTx, lntypes.WeightUnit, btcutil.Amount, btcutil.Amount,
+	error) {
 
 	// Sanity check, there should be at least 1 sweep in this batch.
 	if len(sweeps) == 0 {
@@ -1250,6 +1256,13 @@ func constructUnsignedTx(sweeps []sweep, address btcutil.Address,
 	batchTx := &wire.MsgTx{
 		Version:  2,
 		LockTime: uint32(currentHeight),
+	}
+
+	var changeOutputs []*wire.TxOut
+	for _, sweep := range sweeps {
+		if sweep.change != nil {
+			changeOutputs = append(changeOutputs, sweep.change)
+		}
 	}
 
 	// Add transaction inputs and estimate its weight.
@@ -1297,6 +1310,11 @@ func constructUnsignedTx(sweeps []sweep, address btcutil.Address,
 			"failed: %w", err)
 	}
 
+	// Add the optional change outputs to weight estimates.
+	for _, _ = range changeOutputs {
+		weightEstimate.AddP2TROutput()
+	}
+
 	// Keep track of the total amount this batch is sweeping back.
 	batchAmt := btcutil.Amount(0)
 	for _, sweep := range sweeps {
@@ -1318,11 +1336,50 @@ func constructUnsignedTx(sweeps []sweep, address btcutil.Address,
 	fee := clampBatchFee(feeForWeight, batchAmt)
 
 	// Add the batch transaction output, which excludes the fees paid to
-	// miners.
-	batchTx.AddTxOut(&wire.TxOut{
-		PkScript: batchPkScript,
-		Value:    int64(batchAmt - fee),
-	})
+	// miners. Reduce the amount by the sum of change outputs, if any.
+	if len(changeOutputs) == 0 {
+		batchTx.AddTxOut(&wire.TxOut{
+			PkScript: batchPkScript,
+			Value:    int64(batchAmt - fee),
+		})
+	} else {
+		// Reduce the batch output by the sum of change outputs.
+		var sumChange int64
+		for _, change := range changeOutputs {
+			sumChange += change.Value
+		}
+		// Add the main output first.
+		batchTx.AddTxOut(&wire.TxOut{
+			PkScript: batchPkScript,
+			Value:    int64(batchAmt-fee) - sumChange,
+		})
+		// Then add change outputs.
+		for _, txOut := range changeOutputs {
+			batchTx.AddTxOut(&wire.TxOut{
+				PkScript: txOut.PkScript,
+				Value:    txOut.Value,
+			})
+		}
+	}
+
+	// Check that for each swap, inputs exceed the change outputs.
+	swap2Inputs := make(map[lntypes.Hash]btcutil.Amount)
+	swap2Change := make(map[lntypes.Hash]btcutil.Amount)
+	for _, sweep := range sweeps {
+		swap2Inputs[sweep.swapHash] += sweep.value
+		if sweep.change != nil {
+			swap2Change[sweep.swapHash] +=
+				btcutil.Amount(sweep.change.Value)
+		}
+	}
+
+	for swapHash, inputs := range swap2Inputs {
+		change := swap2Change[swapHash]
+		if inputs <= change {
+			return nil, 0, 0, 0, fmt.Errorf("inputs %v <= change "+
+				"%v for swap %x", inputs, change, swapHash[:6])
+		}
+	}
 
 	return batchTx, weight, feeForWeight, fee, nil
 }
@@ -1396,7 +1453,9 @@ func (b *batch) publishMixedBatch(ctx context.Context) (btcutil.Amount, error,
 			attempt)
 
 		// Construct unsigned batch transaction.
-		var err error
+		var (
+			err error
+		)
 		tx, weight, feeForWeight, fee, err = constructUnsignedTx(
 			sweeps, address, b.currentHeight, b.rbfCache.FeeRate,
 		)

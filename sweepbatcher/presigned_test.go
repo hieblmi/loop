@@ -1011,6 +1011,7 @@ func TestPresign(t *testing.T) {
 				ctx, tc.presigner, tc.destAddr,
 				tc.primarySweepID, tc.sweeps,
 				tc.nextBlockFeeRate,
+				&chaincfg.RegressionNetParams,
 			)
 			if tc.wantErr != "" {
 				require.Error(t, err)
@@ -1460,7 +1461,8 @@ func TestCheckSignedTx(t *testing.T) {
 			},
 			inputAmt:    3_000_000,
 			minRelayFee: 253,
-			wantErr:     "unsigned tx has 2 outputs, want 1",
+			wantErr: "unsigned tx has 2 outputs, signed tx " +
+				"has 1 outputs, should be equal",
 		},
 
 		{
@@ -1517,7 +1519,8 @@ func TestCheckSignedTx(t *testing.T) {
 			},
 			inputAmt:    3_000_000,
 			minRelayFee: 253,
-			wantErr:     "the signed tx has 2 outputs, want 1",
+			wantErr: "unsigned tx has 1 outputs, signed tx " +
+				"has 2 outputs, should be equal",
 		},
 
 		{
