@@ -13,6 +13,7 @@ import (
 	"github.com/lightninglabs/loop/utils"
 	"github.com/lightningnetwork/lnd/input"
 	"github.com/lightningnetwork/lnd/lntypes"
+	"github.com/lightningnetwork/lnd/lnwallet"
 	"github.com/lightningnetwork/lnd/lnwallet/chainfee"
 	"github.com/stretchr/testify/require"
 )
@@ -29,6 +30,10 @@ func TestConstructUnsignedTx(t *testing.T) {
 		Hash:  chainhash.Hash{2, 2, 2},
 		Index: 2,
 	}
+	op3 := wire.OutPoint{
+		Hash:  chainhash.Hash{3, 3, 3},
+		Index: 3,
+	}
 
 	batchPkScript, err := txscript.PayToAddrScript(destAddr)
 	require.NoError(t, err)
@@ -39,6 +44,28 @@ func TestConstructUnsignedTx(t *testing.T) {
 	require.NoError(t, err)
 	p2trPkScript, err := txscript.PayToAddrScript(p2trAddress)
 	require.NoError(t, err)
+
+	change1Addr := "bc1pdx9ggvtjjcpaqfqk375qhdmzx9xu8dcu7w94lqfcxhh0rj" +
+		"lwyyeq5ryn6r"
+	change1Address, err := btcutil.DecodeAddress(change1Addr, nil)
+	require.NoError(t, err)
+	change1Pkscript, err := txscript.PayToAddrScript(change1Address)
+	require.NoError(t, err)
+	change1 := &wire.TxOut{
+		Value:    100_000,
+		PkScript: change1Pkscript,
+	}
+
+	change2Addr := "bc1psw0nrrulq4pgyuyk09a3wsutygltys4gxjjw3zl2uz4ep8pa" +
+		"r2vsvntfe0"
+	change2Address, err := btcutil.DecodeAddress(change2Addr, nil)
+	require.NoError(t, err)
+	change2Pkscript, err := txscript.PayToAddrScript(change2Address)
+	require.NoError(t, err)
+	change2 := &wire.TxOut{
+		Value:    200_000,
+		PkScript: change2Pkscript,
+	}
 
 	serializedPubKey := []byte{
 		0x02, 0x19, 0x2d, 0x74, 0xd0, 0xcb, 0x94, 0x34, 0x4c, 0x95,
@@ -69,6 +96,8 @@ func TestConstructUnsignedTx(t *testing.T) {
 	brokenEstimator := func(*input.TxWeightEstimator) error {
 		return fmt.Errorf("weight estimator test failure")
 	}
+
+	dustLimit := lnwallet.DustLimitForSize(input.P2TRSize)
 
 	cases := []struct {
 		name             string
@@ -223,7 +252,7 @@ func TestConstructUnsignedTx(t *testing.T) {
 				},
 				TxOut: []*wire.TxOut{
 					{
-						Value:    2400000,
+						Value:    2_400_000,
 						PkScript: batchPkScript,
 					},
 				},
@@ -265,7 +294,7 @@ func TestConstructUnsignedTx(t *testing.T) {
 				},
 				TxOut: []*wire.TxOut{
 					{
-						Value:    2999211,
+						Value:    2_999_211,
 						PkScript: batchPkScript,
 					},
 				},
@@ -273,6 +302,208 @@ func TestConstructUnsignedTx(t *testing.T) {
 			wantWeight:       789,
 			wantFeeForWeight: 789,
 			wantFee:          789,
+		},
+
+		{
+			name: "single sweep with change",
+			sweeps: []sweep{
+				{
+					outpoint: op1,
+					value:    1_000_000,
+					change:   change1,
+				},
+			},
+			address:       p2trAddress,
+			currentHeight: 800_000,
+			feeRate:       1000,
+			wantTx: &wire.MsgTx{
+				Version:  2,
+				LockTime: 800_000,
+				TxIn: []*wire.TxIn{
+					{
+						PreviousOutPoint: op1,
+					},
+				},
+				TxOut: []*wire.TxOut{
+					{
+						Value:    899_384,
+						PkScript: p2trPkScript,
+					},
+					{
+						Value:    change1.Value,
+						PkScript: change1.PkScript,
+					},
+				},
+			},
+			wantWeight:       616,
+			wantFeeForWeight: 616,
+			wantFee:          616,
+		},
+
+		{
+			name: "all sweeps different change outputs",
+			sweeps: []sweep{
+				{
+					outpoint: op1,
+					value:    1_000_000,
+				},
+				{
+					outpoint: op2,
+					value:    2_000_000,
+					change:   change1,
+				},
+				{
+					outpoint: op3,
+					value:    3_000_000,
+					change:   change2,
+				},
+			},
+			address:       p2trAddress,
+			currentHeight: 800_000,
+			feeRate:       1000,
+			wantTx: &wire.MsgTx{
+				Version:  2,
+				LockTime: 800_000,
+				TxIn: []*wire.TxIn{
+					{
+						PreviousOutPoint: op1,
+					},
+					{
+						PreviousOutPoint: op2,
+					},
+					{
+						PreviousOutPoint: op3,
+					},
+				},
+				TxOut: []*wire.TxOut{
+					{
+						Value:    5_698_752,
+						PkScript: p2trPkScript,
+					},
+					{
+						Value:    change1.Value,
+						PkScript: change1.PkScript,
+					},
+					{
+						Value:    change2.Value,
+						PkScript: change2.PkScript,
+					},
+				},
+			},
+			wantWeight:       1248,
+			wantFeeForWeight: 1248,
+			wantFee:          1248,
+		},
+
+		{
+			name: "change exceeds input value",
+			sweeps: []sweep{
+				{
+					outpoint: op2,
+					value:    btcutil.Amount(change1.Value - 1),
+					change:   change1,
+				},
+			},
+			address:       p2trAddress,
+			currentHeight: 800_000,
+			feeRate:       1000,
+			wantTx: &wire.MsgTx{
+				Version:  2,
+				LockTime: 800_000,
+				TxIn: []*wire.TxIn{
+					{
+						PreviousOutPoint: op2,
+					},
+				},
+				TxOut: []*wire.TxOut{
+					{
+						Value:    change1.Value,
+						PkScript: change1.PkScript,
+					},
+				},
+			},
+			wantErr: "batch amount 0.00099999 BTC is <= the sum " +
+				"of change outputs 0.00100000 BTC",
+		},
+
+		{
+			name: "main output dust, batch amount less than " +
+				"change+fee+dust",
+			sweeps: []sweep{
+				{
+					outpoint: op1,
+					value:    dustLimit,
+				},
+				{
+					outpoint: op2,
+					value:    btcutil.Amount(change1.Value),
+					change:   change1,
+				},
+			},
+			address:       p2trAddress,
+			currentHeight: 800_000,
+			feeRate:       1,
+			wantErr: "batch amount 0.00100330 BTC is <= the sum " +
+				"of change outputs 0.00100000 BTC plus fee " +
+				"0.00000001 BTC and dust limit 0.00000330 BTC",
+		},
+
+		{
+			name: "change output is dust",
+			sweeps: []sweep{
+				{
+					outpoint: op1,
+					value:    1_000_000,
+					change: &wire.TxOut{
+						Value:    int64(dustLimit - 1),
+						PkScript: []byte{0xaf, 0xfe},
+					},
+				},
+			},
+			address:       p2trAddress,
+			currentHeight: 800_000,
+			feeRate:       1,
+			wantErr: "output 0.00000329 BTC is below dust limit " +
+				"0.00000477 BTC",
+		},
+
+		{
+			name: "clamp fee to max fee to swap amount ratio",
+			sweeps: []sweep{
+				{
+					outpoint: op1,
+					value:    btcutil.SatoshiPerBitcoin,
+					change: &wire.TxOut{
+						Value:    btcutil.SatoshiPerBitcoin * 0.9,
+						PkScript: change1Pkscript,
+					},
+				},
+			},
+			address:       p2trAddress,
+			currentHeight: 800_000,
+			feeRate:       10000000,
+			wantTx: &wire.MsgTx{
+				Version:  2,
+				LockTime: 800_000,
+				TxIn: []*wire.TxIn{
+					{
+						PreviousOutPoint: op1,
+					},
+				},
+				TxOut: []*wire.TxOut{
+					{
+						Value:    btcutil.SatoshiPerBitcoin * 0.08,
+						PkScript: p2trPkScript,
+					},
+					{
+						Value:    btcutil.SatoshiPerBitcoin * 0.9,
+						PkScript: change1.PkScript,
+					},
+				},
+			},
+			wantWeight:       616,
+			wantFeeForWeight: 6_160_000,
+			wantFee:          2_000_000,
 		},
 
 		{
