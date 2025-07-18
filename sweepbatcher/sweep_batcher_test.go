@@ -228,7 +228,7 @@ func testSweepBatcherBatchCreation(t *testing.T, store testStore,
 	sweepReq1 := SweepRequest{
 		SwapHash: lntypes.Hash{1, 1, 1},
 		Inputs: []Input{{
-			Value:    111,
+			Value:    1111,
 			Outpoint: op1,
 		}},
 		Notifier: &dummyNotifier,
@@ -237,7 +237,7 @@ func testSweepBatcherBatchCreation(t *testing.T, store testStore,
 	swap1 := &loopdb.LoopOutContract{
 		SwapContract: loopdb.SwapContract{
 			CltvExpiry:      111,
-			AmountRequested: 111,
+			AmountRequested: 1111,
 			ProtocolVersion: loopdb.ProtocolVersionMuSig2,
 			HtlcKeys:        htlcKeys,
 		},
@@ -275,7 +275,7 @@ func testSweepBatcherBatchCreation(t *testing.T, store testStore,
 	sweepReq2 := SweepRequest{
 		SwapHash: lntypes.Hash{2, 2, 2},
 		Inputs: []Input{{
-			Value:    222,
+			Value:    2222,
 			Outpoint: op2,
 		}},
 		Notifier: &dummyNotifier,
@@ -284,7 +284,7 @@ func testSweepBatcherBatchCreation(t *testing.T, store testStore,
 	swap2 := &loopdb.LoopOutContract{
 		SwapContract: loopdb.SwapContract{
 			CltvExpiry:      111 + defaultMaxTimeoutDistance - 1,
-			AmountRequested: 222,
+			AmountRequested: 2222,
 			ProtocolVersion: loopdb.ProtocolVersionMuSig2,
 			HtlcKeys:        htlcKeys,
 
@@ -321,7 +321,7 @@ func testSweepBatcherBatchCreation(t *testing.T, store testStore,
 	sweepReq3 := SweepRequest{
 		SwapHash: lntypes.Hash{3, 3, 3},
 		Inputs: []Input{{
-			Value:    333,
+			Value:    3333,
 			Outpoint: op3,
 		}},
 		Notifier: &dummyNotifier,
@@ -330,7 +330,7 @@ func testSweepBatcherBatchCreation(t *testing.T, store testStore,
 	swap3 := &loopdb.LoopOutContract{
 		SwapContract: loopdb.SwapContract{
 			CltvExpiry:      111 + defaultMaxTimeoutDistance + 1,
-			AmountRequested: 333,
+			AmountRequested: 3333,
 			ProtocolVersion: loopdb.ProtocolVersionMuSig2,
 			HtlcKeys:        htlcKeys,
 
@@ -538,7 +538,7 @@ func testTxLabeler(t *testing.T, store testStore,
 	sweepReq1 := SweepRequest{
 		SwapHash: lntypes.Hash{1, 1, 1},
 		Inputs: []Input{{
-			Value:    111,
+			Value:    1111,
 			Outpoint: op1,
 		}},
 		Notifier: &dummyNotifier,
@@ -547,7 +547,7 @@ func testTxLabeler(t *testing.T, store testStore,
 	swap1 := &loopdb.LoopOutContract{
 		SwapContract: loopdb.SwapContract{
 			CltvExpiry:      111,
-			AmountRequested: 111,
+			AmountRequested: 1111,
 			ProtocolVersion: loopdb.ProtocolVersionMuSig2,
 			HtlcKeys:        htlcKeys,
 		},
@@ -691,7 +691,7 @@ func testPublishErrorHandler(t *testing.T, store testStore,
 	sweepReq1 := SweepRequest{
 		SwapHash: lntypes.Hash{1, 1, 1},
 		Inputs: []Input{{
-			Value: 111,
+			Value: 1111,
 			Outpoint: wire.OutPoint{
 				Hash:  chainhash.Hash{1, 1},
 				Index: 1,
@@ -703,7 +703,7 @@ func testPublishErrorHandler(t *testing.T, store testStore,
 	swap1 := &loopdb.LoopOutContract{
 		SwapContract: loopdb.SwapContract{
 			CltvExpiry:      111,
-			AmountRequested: 111,
+			AmountRequested: 1111,
 			ProtocolVersion: loopdb.ProtocolVersionMuSig2,
 			HtlcKeys:        htlcKeys,
 		},
@@ -773,7 +773,7 @@ func testSweepBatcherSimpleLifecycle(t *testing.T, store testStore,
 		Index: 1,
 	}
 	const (
-		inputValue  = 111
+		inputValue  = 1111
 		outputValue = 50
 		fee         = inputValue - outputValue
 	)
@@ -1208,7 +1208,7 @@ func testSweepBatcherSkippedTxns(t *testing.T, store testStore,
 	}
 	swapHash := lntypes.Hash{1, 1, 1}
 	const (
-		inputValue       = 111
+		inputValue       = 1111
 		initiationHeight = 550
 	)
 
@@ -1418,7 +1418,7 @@ func testDelays(t *testing.T, store testStore, batcherStore testBatcherStore) {
 	sweepReq := SweepRequest{
 		SwapHash: lntypes.Hash{1, 1, 1},
 		Inputs: []Input{{
-			Value:    111,
+			Value:    1111,
 			Outpoint: op1,
 		}},
 		Notifier: &dummyNotifier,
@@ -1427,7 +1427,7 @@ func testDelays(t *testing.T, store testStore, batcherStore testBatcherStore) {
 	swap := &loopdb.LoopOutContract{
 		SwapContract: loopdb.SwapContract{
 			CltvExpiry:      1000,
-			AmountRequested: 111,
+			AmountRequested: 1111,
 			ProtocolVersion: loopdb.ProtocolVersionMuSig2,
 			HtlcKeys:        htlcKeys,
 		},
@@ -1711,7 +1711,7 @@ func testDelays(t *testing.T, store testStore, batcherStore testBatcherStore) {
 	sweepReq2 := SweepRequest{
 		SwapHash: lntypes.Hash{2, 2, 2},
 		Inputs: []Input{{
-			Value: 111,
+			Value: 1111,
 			Outpoint: wire.OutPoint{
 				Hash:  chainhash.Hash{2, 2},
 				Index: 2,
@@ -1726,7 +1726,7 @@ func testDelays(t *testing.T, store testStore, batcherStore testBatcherStore) {
 			// CltvExpiry is not urgent, but close.
 			CltvExpiry: 600 + blocksInDelay*2 + 5,
 
-			AmountRequested: 111,
+			AmountRequested: 1111,
 			ProtocolVersion: loopdb.ProtocolVersionMuSig2,
 			HtlcKeys:        htlcKeys,
 
@@ -1794,7 +1794,7 @@ func testDelays(t *testing.T, store testStore, batcherStore testBatcherStore) {
 	sweepReq3 := SweepRequest{
 		SwapHash: lntypes.Hash{3, 3, 3},
 		Inputs: []Input{{
-			Value: 111,
+			Value: 1111,
 			Outpoint: wire.OutPoint{
 				Hash:  chainhash.Hash{3, 3},
 				Index: 3,
@@ -1807,7 +1807,7 @@ func testDelays(t *testing.T, store testStore, batcherStore testBatcherStore) {
 			// CltvExpiry is urgent.
 			CltvExpiry: 600 + blocksInDelay*2 - 5,
 
-			AmountRequested: 111,
+			AmountRequested: 1111,
 			ProtocolVersion: loopdb.ProtocolVersionMuSig2,
 			HtlcKeys:        htlcKeys,
 
@@ -1870,8 +1870,8 @@ func testCustomDelays(t *testing.T, store testStore,
 	swapHash2 := lntypes.Hash{2, 2, 2}
 
 	const (
-		swapSize1 = 111
-		swapSize2 = 222
+		swapSize1 = 1111
+		swapSize2 = 2222
 	)
 
 	// initialDelay returns initialDelay depending of batch size (sats).
@@ -1944,7 +1944,7 @@ func testCustomDelays(t *testing.T, store testStore,
 	swap1 := &loopdb.LoopOutContract{
 		SwapContract: loopdb.SwapContract{
 			CltvExpiry:      1000,
-			AmountRequested: 111,
+			AmountRequested: 1111,
 			ProtocolVersion: loopdb.ProtocolVersionMuSig2,
 			HtlcKeys:        htlcKeys,
 		},
@@ -2012,7 +2012,7 @@ func testCustomDelays(t *testing.T, store testStore,
 	swap2 := &loopdb.LoopOutContract{
 		SwapContract: loopdb.SwapContract{
 			CltvExpiry:      1000,
-			AmountRequested: 111,
+			AmountRequested: 1111,
 			ProtocolVersion: loopdb.ProtocolVersionMuSig2,
 			HtlcKeys:        htlcKeys,
 
@@ -2151,7 +2151,7 @@ func testMaxSweepsPerBatch(t *testing.T, store testStore,
 		sweepReq := SweepRequest{
 			SwapHash: swapHash,
 			Inputs: []Input{{
-				Value:    111,
+				Value:    1111,
 				Outpoint: outpoint,
 			}},
 			Notifier: &dummyNotifier,
@@ -2160,7 +2160,7 @@ func testMaxSweepsPerBatch(t *testing.T, store testStore,
 		swap := &loopdb.LoopOutContract{
 			SwapContract: loopdb.SwapContract{
 				CltvExpiry:      1000,
-				AmountRequested: 111,
+				AmountRequested: 1111,
 				ProtocolVersion: loopdb.ProtocolVersionMuSig2,
 				HtlcKeys:        htlcKeys,
 
@@ -2268,7 +2268,7 @@ func testSweepBatcherSweepReentry(t *testing.T, store testStore,
 		Hash:  chainhash.Hash{1, 1},
 		Index: 1,
 	}
-	value1 := btcutil.Amount(111)
+	value1 := btcutil.Amount(1111)
 	sweepReq1 := SweepRequest{
 		SwapHash: lntypes.Hash{1, 1, 1},
 		Inputs: []Input{{
@@ -2281,7 +2281,7 @@ func testSweepBatcherSweepReentry(t *testing.T, store testStore,
 	swap1 := &loopdb.LoopOutContract{
 		SwapContract: loopdb.SwapContract{
 			CltvExpiry:      111,
-			AmountRequested: 111,
+			AmountRequested: 1111,
 			ProtocolVersion: loopdb.ProtocolVersionMuSig2,
 			HtlcKeys:        htlcKeys,
 		},
@@ -2297,7 +2297,7 @@ func testSweepBatcherSweepReentry(t *testing.T, store testStore,
 	sweepReq2 := SweepRequest{
 		SwapHash: lntypes.Hash{2, 2, 2},
 		Inputs: []Input{{
-			Value: 222,
+			Value: 2222,
 			Outpoint: wire.OutPoint{
 				Hash:  chainhash.Hash{2, 2},
 				Index: 2,
@@ -2309,7 +2309,7 @@ func testSweepBatcherSweepReentry(t *testing.T, store testStore,
 	swap2 := &loopdb.LoopOutContract{
 		SwapContract: loopdb.SwapContract{
 			CltvExpiry:      111,
-			AmountRequested: 222,
+			AmountRequested: 2222,
 			ProtocolVersion: loopdb.ProtocolVersionMuSig2,
 			HtlcKeys:        htlcKeys,
 
@@ -2328,7 +2328,7 @@ func testSweepBatcherSweepReentry(t *testing.T, store testStore,
 	sweepReq3 := SweepRequest{
 		SwapHash: lntypes.Hash{3, 3, 3},
 		Inputs: []Input{{
-			Value: 333,
+			Value: 3333,
 			Outpoint: wire.OutPoint{
 				Hash:  chainhash.Hash{3, 3},
 				Index: 3,
@@ -2340,7 +2340,7 @@ func testSweepBatcherSweepReentry(t *testing.T, store testStore,
 	swap3 := &loopdb.LoopOutContract{
 		SwapContract: loopdb.SwapContract{
 			CltvExpiry:      111,
-			AmountRequested: 333,
+			AmountRequested: 3333,
 			ProtocolVersion: loopdb.ProtocolVersionMuSig2,
 			HtlcKeys:        htlcKeys,
 
@@ -2535,7 +2535,7 @@ func testSweepBatcherGroup(t *testing.T, store testStore,
 	swap1 := &loopdb.LoopOutContract{
 		SwapContract: loopdb.SwapContract{
 			CltvExpiry:      111,
-			AmountRequested: 111,
+			AmountRequested: 1111,
 			ProtocolVersion: loopdb.ProtocolVersionMuSig2,
 			HtlcKeys:        htlcKeys,
 		},
@@ -2554,11 +2554,11 @@ func testSweepBatcherGroup(t *testing.T, store testStore,
 		Inputs: []Input{
 			{
 				Outpoint: outpoint1,
-				Value:    111,
+				Value:    1111,
 			},
 			{
 				Outpoint: outpoint2,
-				Value:    222,
+				Value:    2222,
 			},
 		},
 		Notifier: &dummyNotifier,
@@ -2620,7 +2620,7 @@ func testSweepBatcherNonWalletAddr(t *testing.T, store testStore,
 	sweepReq1 := SweepRequest{
 		SwapHash: lntypes.Hash{1, 1, 1},
 		Inputs: []Input{{
-			Value:    111,
+			Value:    1111,
 			Outpoint: op1,
 		}},
 		Notifier: &dummyNotifier,
@@ -2629,7 +2629,7 @@ func testSweepBatcherNonWalletAddr(t *testing.T, store testStore,
 	swap1 := &loopdb.LoopOutContract{
 		SwapContract: loopdb.SwapContract{
 			CltvExpiry:      111,
-			AmountRequested: 111,
+			AmountRequested: 1111,
 			ProtocolVersion: loopdb.ProtocolVersionMuSig2,
 			HtlcKeys:        htlcKeys,
 		},
@@ -2667,7 +2667,7 @@ func testSweepBatcherNonWalletAddr(t *testing.T, store testStore,
 	sweepReq2 := SweepRequest{
 		SwapHash: lntypes.Hash{2, 2, 2},
 		Inputs: []Input{{
-			Value:    222,
+			Value:    2222,
 			Outpoint: op2,
 		}},
 		Notifier: &dummyNotifier,
@@ -2676,7 +2676,7 @@ func testSweepBatcherNonWalletAddr(t *testing.T, store testStore,
 	swap2 := &loopdb.LoopOutContract{
 		SwapContract: loopdb.SwapContract{
 			CltvExpiry:      111 + defaultMaxTimeoutDistance - 1,
-			AmountRequested: 222,
+			AmountRequested: 2222,
 			ProtocolVersion: loopdb.ProtocolVersionMuSig2,
 			HtlcKeys:        htlcKeys,
 
@@ -2713,7 +2713,7 @@ func testSweepBatcherNonWalletAddr(t *testing.T, store testStore,
 	sweepReq3 := SweepRequest{
 		SwapHash: lntypes.Hash{3, 3, 3},
 		Inputs: []Input{{
-			Value:    333,
+			Value:    3333,
 			Outpoint: op3,
 		}},
 		Notifier: &dummyNotifier,
@@ -2722,7 +2722,7 @@ func testSweepBatcherNonWalletAddr(t *testing.T, store testStore,
 	swap3 := &loopdb.LoopOutContract{
 		SwapContract: loopdb.SwapContract{
 			CltvExpiry:      111 + defaultMaxTimeoutDistance + 1,
-			AmountRequested: 222,
+			AmountRequested: 2222,
 			ProtocolVersion: loopdb.ProtocolVersionMuSig2,
 			HtlcKeys:        htlcKeys,
 
@@ -2798,6 +2798,8 @@ func testSweepBatcherComposite(t *testing.T, store testStore,
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+	lnd.SetMinRelayFee(200)
+
 	sweepStore, err := NewSweepFetcherFromSwapStore(store, lnd.ChainParams)
 	require.NoError(t, err)
 
@@ -2838,7 +2840,7 @@ func testSweepBatcherComposite(t *testing.T, store testStore,
 	sweepReq1 := SweepRequest{
 		SwapHash: lntypes.Hash{1, 1, 1},
 		Inputs: []Input{{
-			Value:    111,
+			Value:    1111,
 			Outpoint: op1,
 		}},
 		Notifier: &dummyNotifier,
@@ -2847,7 +2849,7 @@ func testSweepBatcherComposite(t *testing.T, store testStore,
 	swap1 := &loopdb.LoopOutContract{
 		SwapContract: loopdb.SwapContract{
 			CltvExpiry:      111,
-			AmountRequested: 111,
+			AmountRequested: 1111,
 			ProtocolVersion: loopdb.ProtocolVersionMuSig2,
 			HtlcKeys:        htlcKeys,
 		},
@@ -2865,7 +2867,7 @@ func testSweepBatcherComposite(t *testing.T, store testStore,
 	sweepReq2 := SweepRequest{
 		SwapHash: lntypes.Hash{2, 2, 2},
 		Inputs: []Input{{
-			Value:    222,
+			Value:    2222,
 			Outpoint: op2,
 		}},
 		Notifier: &dummyNotifier,
@@ -2874,7 +2876,7 @@ func testSweepBatcherComposite(t *testing.T, store testStore,
 	swap2 := &loopdb.LoopOutContract{
 		SwapContract: loopdb.SwapContract{
 			CltvExpiry:      111 + defaultMaxTimeoutDistance - 1,
-			AmountRequested: 222,
+			AmountRequested: 2222,
 			ProtocolVersion: loopdb.ProtocolVersionMuSig2,
 			HtlcKeys:        htlcKeys,
 
@@ -2895,7 +2897,7 @@ func testSweepBatcherComposite(t *testing.T, store testStore,
 	sweepReq3 := SweepRequest{
 		SwapHash: lntypes.Hash{3, 3, 3},
 		Inputs: []Input{{
-			Value:    333,
+			Value:    3333,
 			Outpoint: op3,
 		}},
 		Notifier: &dummyNotifier,
@@ -2904,7 +2906,7 @@ func testSweepBatcherComposite(t *testing.T, store testStore,
 	swap3 := &loopdb.LoopOutContract{
 		SwapContract: loopdb.SwapContract{
 			CltvExpiry:      111 + defaultMaxTimeoutDistance - 3,
-			AmountRequested: 333,
+			AmountRequested: 3333,
 			ProtocolVersion: loopdb.ProtocolVersionMuSig2,
 			HtlcKeys:        htlcKeys,
 
@@ -3241,7 +3243,7 @@ func testRestoringEmptyBatch(t *testing.T, store testStore,
 	sweepReq := SweepRequest{
 		SwapHash: lntypes.Hash{1, 1, 1},
 		Inputs: []Input{{
-			Value:    111,
+			Value:    1111,
 			Outpoint: op,
 		}},
 		Notifier: &dummyNotifier,
@@ -3250,7 +3252,7 @@ func testRestoringEmptyBatch(t *testing.T, store testStore,
 	swap := &loopdb.LoopOutContract{
 		SwapContract: loopdb.SwapContract{
 			CltvExpiry:      111,
-			AmountRequested: 111,
+			AmountRequested: 1111,
 			ProtocolVersion: loopdb.ProtocolVersionMuSig2,
 			HtlcKeys:        htlcKeys,
 		},
@@ -3425,7 +3427,7 @@ func testHandleSweepTwice(t *testing.T, backend testStore,
 	sweepReq1 := SweepRequest{
 		SwapHash: lntypes.Hash{1, 1, 1},
 		Inputs: []Input{{
-			Value:    111,
+			Value:    1111,
 			Outpoint: op1,
 		}},
 		Notifier: &dummyNotifier,
@@ -3438,7 +3440,7 @@ func testHandleSweepTwice(t *testing.T, backend testStore,
 		Contract: &loopdb.LoopOutContract{
 			SwapContract: loopdb.SwapContract{
 				CltvExpiry:      shortCltv,
-				AmountRequested: 111,
+				AmountRequested: 1111,
 				ProtocolVersion: loopdb.ProtocolVersionMuSig2,
 				HtlcKeys:        htlcKeys,
 			},
@@ -3455,7 +3457,7 @@ func testHandleSweepTwice(t *testing.T, backend testStore,
 	sweepReq2 := SweepRequest{
 		SwapHash: lntypes.Hash{2, 2, 2},
 		Inputs: []Input{{
-			Value:    222,
+			Value:    2222,
 			Outpoint: op2,
 		}},
 		Notifier: &dummyNotifier,
@@ -3468,7 +3470,7 @@ func testHandleSweepTwice(t *testing.T, backend testStore,
 		Contract: &loopdb.LoopOutContract{
 			SwapContract: loopdb.SwapContract{
 				CltvExpiry:      longCltv,
-				AmountRequested: 222,
+				AmountRequested: 2222,
 				ProtocolVersion: loopdb.ProtocolVersionMuSig2,
 				HtlcKeys:        htlcKeys,
 			},
@@ -3523,7 +3525,7 @@ func testHandleSweepTwice(t *testing.T, backend testStore,
 		Contract: &loopdb.LoopOutContract{
 			SwapContract: loopdb.SwapContract{
 				CltvExpiry:      shortCltv,
-				AmountRequested: 222,
+				AmountRequested: 2222,
 				ProtocolVersion: loopdb.ProtocolVersionMuSig2,
 				HtlcKeys:        htlcKeys,
 			},
@@ -3627,7 +3629,7 @@ func testRestoringPreservesConfTarget(t *testing.T, store testStore,
 	sweepReq := SweepRequest{
 		SwapHash: lntypes.Hash{1, 1, 1},
 		Inputs: []Input{{
-			Value:    111,
+			Value:    1111,
 			Outpoint: op,
 		}},
 		Notifier: &dummyNotifier,
@@ -3636,7 +3638,7 @@ func testRestoringPreservesConfTarget(t *testing.T, store testStore,
 	swap := &loopdb.LoopOutContract{
 		SwapContract: loopdb.SwapContract{
 			CltvExpiry:      111,
-			AmountRequested: 111,
+			AmountRequested: 1111,
 			ProtocolVersion: loopdb.ProtocolVersionMuSig2,
 			HtlcKeys:        htlcKeys,
 		},
@@ -3954,7 +3956,7 @@ func testSweepBatcherCloseDuringAdding(t *testing.T, store testStore,
 		swap := &loopdb.LoopOutContract{
 			SwapContract: loopdb.SwapContract{
 				CltvExpiry:      111,
-				AmountRequested: 111,
+				AmountRequested: 1111,
 
 				// Make preimage unique to pass SQL constraints.
 				Preimage: lntypes.Preimage{i},
@@ -3980,7 +3982,7 @@ func testSweepBatcherCloseDuringAdding(t *testing.T, store testStore,
 			sweepReq := SweepRequest{
 				SwapHash: lntypes.Hash{i, i, i},
 				Inputs: []Input{{
-					Value: 111,
+					Value: 1111,
 					Outpoint: wire.OutPoint{
 						Hash:  chainhash.Hash{i, i},
 						Index: 1,
@@ -4062,7 +4064,7 @@ func testCustomSignMuSig2(t *testing.T, store testStore,
 	sweepReq := SweepRequest{
 		SwapHash: lntypes.Hash{1, 1, 1},
 		Inputs: []Input{{
-			Value: 111,
+			Value: 1111,
 			Outpoint: wire.OutPoint{
 				Hash:  chainhash.Hash{1, 1},
 				Index: 1,
@@ -4074,7 +4076,7 @@ func testCustomSignMuSig2(t *testing.T, store testStore,
 	swap := &loopdb.LoopOutContract{
 		SwapContract: loopdb.SwapContract{
 			CltvExpiry:      111,
-			AmountRequested: 111,
+			AmountRequested: 1111,
 			ProtocolVersion: loopdb.ProtocolVersionMuSig2,
 			HtlcKeys:        htlcKeys,
 		},
