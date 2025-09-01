@@ -181,30 +181,8 @@ func (m *Manager) NewAddress(ctx context.Context) (*btcutil.AddressTaproot,
 func (m *Manager) newAddress(ctx context.Context) (*btcutil.AddressTaproot,
 	int64, error) {
 
-	// If there's already a static address in the database, we can return
-	// it.
-	addresses, err := m.cfg.Store.GetAllStaticAddresses(ctx)
-	if err != nil {
-		return nil, 0, err
-	}
-	if len(addresses) > 0 {
-		clientPubKey := addresses[0].ClientPubkey
-		serverPubKey := addresses[0].ServerPubkey
-		expiry := int64(addresses[0].Expiry)
-
-		address, err := m.GetTaprootAddress(
-			clientPubKey, serverPubKey, expiry,
-		)
-		if err != nil {
-			return nil, 0, err
-		}
-
-		return address, expiry, nil
-	}
-
-	// We are fetching a new L402 token from the server. There is one static
-	// address per L402 token allowed.
-	err = m.cfg.FetchL402(ctx)
+	// We are fetching a new L402 token from the server.
+	err := m.cfg.FetchL402(ctx)
 	if err != nil {
 		return nil, 0, err
 	}
