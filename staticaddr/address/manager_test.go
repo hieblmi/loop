@@ -8,6 +8,7 @@ import (
 	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/btcsuite/btcd/btcec/v2/schnorr"
 	"github.com/btcsuite/btcd/btcutil"
+	"github.com/lightninglabs/aperture/l402"
 	"github.com/lightninglabs/loop/loopdb"
 	"github.com/lightninglabs/loop/staticaddr/script"
 	"github.com/lightninglabs/loop/swap"
@@ -112,7 +113,7 @@ func TestManager(t *testing.T) {
 	require.NoError(t, err)
 
 	// The addresses have to match.
-	require.Equal(t, expectedAddress.String(), taprootAddress.String())
+	require.Equal(t, expectedAddress.String(), taprootAddress)
 
 	// The expiry has to match.
 	require.EqualValues(t, defaultExpiry, expiry)
@@ -189,7 +190,10 @@ func NewAddressManagerTestContext(t *testing.T) *ManagerTestContext {
 		ChainParams:   mockLnd.ChainParams,
 		AddressClient: mockStaticAddressClient,
 		ChainNotifier: mockLnd.ChainNotifier,
-		FetchL402:     func(context.Context) error { return nil },
+		CurrentToken: func() (*l402.Token, error) {
+			return nil, nil
+		},
+		FetchL402: func(context.Context) error { return nil },
 	}
 
 	getInfo, err := mockLnd.Client.GetInfo(ctxb)
