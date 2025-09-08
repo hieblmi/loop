@@ -330,6 +330,14 @@ func (m *Manager) WithdrawDeposits(ctx context.Context,
 			return "", "", ErrWithdrawingMixedDeposits
 		}
 
+		// Ensure that all previously withdrawn deposits reference their
+		// finalized withdrawal tx.
+		for _, d := range deposits {
+			if d.FinalizedWithdrawalTx == nil {
+				return "", "", ErrMissingPreviousWithdrawn
+			}
+		}
+
 		// If republishing of an existing withdrawal is requested we
 		// ensure that all deposits remain clustered in the context of
 		// the same withdrawal tx. We do this by checking that they have
