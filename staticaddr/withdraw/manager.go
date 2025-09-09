@@ -46,6 +46,11 @@ var (
 	ErrMissingPreviousWithdrawn = errors.New("can't bump fee for subset " +
 		"of clustered deposits")
 
+	// ErrMissingFinalizedTx is returned if previously withdrawn deposits
+	// don't have a finalized withdrawal tx attached.
+	ErrMissingFinalizedTx = errors.New("deposit does not have a " +
+		"finalized withdrawal tx, can't bump fee")
+
 	// MinConfs is the minimum number of confirmations we require for a
 	// deposit to be considered withdrawn.
 	MinConfs int32 = 3
@@ -89,7 +94,7 @@ type ManagerConfig struct {
 	Store *SqlStore
 }
 
-// newWithdrawalRequest is used to send withdrawal request to the manager main
+// newWithdrawalRequest is used to send a withdrawal request to the manager main
 // loop.
 type newWithdrawalRequest struct {
 	outpoints   []wire.OutPoint
@@ -115,7 +120,7 @@ type Manager struct {
 	mu sync.Mutex
 
 	// newWithdrawalRequestChan receives a list of outpoints that should be
-	// withdrawn. The request is forwarded to the managers main loop.
+	// withdrawn. The request is forwarded to the managers' main loop.
 	newWithdrawalRequestChan chan newWithdrawalRequest
 
 	// exitChan signals subroutines that the withdrawal manager is exiting.
@@ -219,9 +224,9 @@ func (m *Manager) Run(ctx context.Context, initChan chan struct{}) error {
 }
 
 func (m *Manager) recoverWithdrawals(ctx context.Context) error {
-	// To recover withdrawals we cluster those with equal withdrawal
-	// addresses and publish their withdrawal tx. Each cluster represents a
-	// separate withdrawal intent by the user.
+	// To recover withdrawals, we cluster those with equal withdrawal
+	// addresses and publish their withdrawal tx. Each cluster represents
+	// one separate withdrawal intent by the user.
 	withdrawingDeposits, err := m.cfg.DepositManager.GetActiveDepositsInState(
 		deposit.Withdrawing,
 	)
@@ -294,7 +299,7 @@ func (m *Manager) recoverWithdrawals(ctx context.Context) error {
 	return nil
 }
 
-// WithdrawDeposits starts a deposits withdrawal flow. If the amount is set to 0
+// WithdrawDeposits starts a deposit withdrawal flow. If the amount is set to 0,
 // the full amount of the selected deposits will be withdrawn.
 func (m *Manager) WithdrawDeposits(ctx context.Context,
 	outpoints []wire.OutPoint, destAddr string, satPerVbyte int64,
@@ -309,6 +314,16 @@ func (m *Manager) WithdrawDeposits(ctx context.Context,
 		deposits       []*deposit.Deposit
 		allDeposited   bool
 		allWithdrawing bool
+		lockDeposits   = func(deposits []*deposit.Deposit) {
+			for _, d := range deposits {
+				d.Lock()
+			}
+		}
+		unlockDeposits = func(deposits []*deposit.Deposit) {
+			for _, d := range deposits {
+				d.Unlock()
+			}
+		}
 	)
 
 	// Ensure that the deposits are in a state in which they can be
@@ -325,20 +340,32 @@ func (m *Manager) WithdrawDeposits(ctx context.Context,
 		deposits, allWithdrawing = m.cfg.DepositManager.AllOutpointsActiveDeposits(
 			outpoints, deposit.Withdrawing,
 		)
-
 		if !allWithdrawing {
 			return "", "", ErrWithdrawingMixedDeposits
 		}
+	}
 
+	// Lock the deposits to prevent concurrent deposit access.
+	lockDeposits(deposits)
+	locked := true
+	defer func() {
+		if locked {
+			unlockDeposits(deposits)
+		}
+	}()
+
+	// If the user requested a fee bump, we'll sanity check the selected
+	// deposits to ensure that they are all part of the same withdrawal.
+	if !allDeposited {
 		// Ensure that all previously withdrawn deposits reference their
 		// finalized withdrawal tx.
 		for _, d := range deposits {
 			if d.FinalizedWithdrawalTx == nil {
-				return "", "", ErrMissingPreviousWithdrawn
+				return "", "", ErrMissingFinalizedTx
 			}
 		}
 
-		// If republishing of an existing withdrawal is requested we
+		// If republishing of an existing withdrawal is requested, we
 		// ensure that all deposits remain clustered in the context of
 		// the same withdrawal tx. We do this by checking that they have
 		// the same previous withdrawal tx hash. This ensures that the
@@ -351,9 +378,9 @@ func (m *Manager) WithdrawDeposits(ctx context.Context,
 			}
 		}
 
-		// We also avoid that the user selects a subset of previously
-		// clustered deposits for a fee bump. This would result in a
-		// different transaction shape.
+		// We also prevent the user from selecting a subset of
+		// previously clustered deposits for a fee bump. This would
+		// result in a different transaction shape.
 		outpointMap := make(map[wire.OutPoint]struct{})
 		for _, d := range deposits {
 			outpointMap[d.OutPoint] = struct{}{}
@@ -443,9 +470,7 @@ func (m *Manager) WithdrawDeposits(ctx context.Context,
 	// If a previous withdrawal existed across the selected deposits, and
 	// it isn't the same as the new withdrawal, we remove it from the
 	// finalized withdrawals to stop republishing it on block arrivals.
-	deposits[0].Lock()
 	prevTx := deposits[0].FinalizedWithdrawalTx
-	deposits[0].Unlock()
 
 	if prevTx != nil && prevTx.TxHash() != finalizedTx.TxHash() {
 		m.mu.Lock()
@@ -454,13 +479,11 @@ func (m *Manager) WithdrawDeposits(ctx context.Context,
 	}
 
 	// Attach the finalized withdrawal tx to the deposits. After a client
-	// restart we can use this address as an indicator to republish the
+	//  restarts, we can use this address as an indicator to republish the
 	// withdrawal tx and continue the withdrawal.
 	// Deposits with the same withdrawal tx are part of the same withdrawal.
 	for _, d := range deposits {
-		d.Lock()
 		d.FinalizedWithdrawalTx = finalizedTx
-		d.Unlock()
 	}
 
 	// Add the new withdrawal tx to the finalized withdrawals to republish
@@ -469,8 +492,13 @@ func (m *Manager) WithdrawDeposits(ctx context.Context,
 	m.finalizedWithdrawalTxns[finalizedTx.TxHash()] = finalizedTx
 	m.mu.Unlock()
 
+	// Unlock the deposits before calling TransitionDeposits, because this
+	// method locks the deposits itself.
+	unlockDeposits(deposits)
+	locked = false
+
 	// Transition the deposits to the withdrawing state. If the user fee
-	// bumped a withdrawal this results in a NOOP transition.
+	// bumped a withdrawal, this results in a NOOP transition.
 	err = m.cfg.DepositManager.TransitionDeposits(
 		ctx, deposits, deposit.OnWithdrawInitiated, deposit.Withdrawing,
 	)
@@ -478,6 +506,10 @@ func (m *Manager) WithdrawDeposits(ctx context.Context,
 		return "", "", fmt.Errorf("failed to transition deposits %w",
 			err)
 	}
+
+	// Re-lock the deposits.
+	lockDeposits(deposits)
+	locked = true
 
 	// Update the deposits in the database.
 	for _, d := range deposits {
