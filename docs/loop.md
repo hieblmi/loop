@@ -34,24 +34,24 @@ $ loop [GLOBAL FLAGS] out [COMMAND FLAGS] amt [addr]
 
 The following flags are supported:
 
-| Name                         | Description                                                                                                                                                                                                                                                                    | Type     | Default value |
-|------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|:-------------:|
-| `--addr="…"`                 | the optional address that the looped out funds should be sent to, if let blank the funds will go to lnd's wallet                                                                                                                                                               | string   |
-| `--account="…"`              | the name of the account to generate a new address from. You can list the names of valid accounts in your backing lnd instance with "lncli wallet accounts list"                                                                                                                | string   |
-| `--account_addr_type="…"`    | the address type of the extended public key specified in account. Currently only pay-to-taproot-pubkey(p2tr) is supported                                                                                                                                                      | string   |    `p2tr`     |
-| `--amt="…"`                  | the amount in satoshis to loop out. To check for the minimum and maximum amounts to loop out please consult "loop terms"                                                                                                                                                       | uint     |      `0`      |
-| `--htlc_confs="…"`           | the number of confirmations (in blocks) that we require for the htlc extended by the server before we reveal the preimage                                                                                                                                                      | uint     |      `1`      |
-| `--conf_target="…"`          | the number of blocks from the swap initiation height that the on-chain HTLC should be swept within                                                                                                                                                                             | uint     |      `9`      |
-| `--max_swap_routing_fee="…"` | the max off-chain swap routing fee in satoshis, if not specified, a default max fee will be used                                                                                                                                                                               | int      |      `0`      |
-| `--fast`                     | indicate you want to swap immediately, paying potentially a higher fee. If not set the swap server might choose to wait up to 30 minutes before publishing the swap HTLC on-chain, to save on its chain fees. Not setting this flag therefore might result in a lower swap fee | bool     |    `false`    |
-| `--payment_timeout="…"`      | the timeout for each individual off-chain payment attempt. If not set, the default timeout of 1 hour will be used. As the payment might be retried, the actual total time may be longer                                                                                        | duration |     `0s`      |
-| `--asset_id="…"`             | the asset ID of the asset to loop out, if this is set, the loop daemon will require a connection to a taproot assets daemon                                                                                                                                                    | string   |
-| `--asset_edge_node="…"`      | the pubkey of the edge node of the asset to loop out, this is required if the taproot assets daemon has multiple channels of the given asset id with different edge nodes                                                                                                      | string   |
-| `--force`                    | Assumes yes during confirmation. Using this option will result in an immediate swap                                                                                                                                                                                            | bool     |    `false`    |
-| `--label="…"`                | an optional label for this swap,limited to 500 characters. The label may not start with our reserved prefix: [reserved]                                                                                                                                                        | string   |
-| `--verbose` (`-v`)           | show expanded details                                                                                                                                                                                                                                                          | bool     |    `false`    |
-| `--channel="…"`              | the comma-separated list of short channel IDs of the channels to loop out                                                                                                                                                                                                      | string   |
-| `--help` (`-h`)              | show help                                                                                                                                                                                                                                                                      | bool     |    `false`    |
+| Name                         | Description                                                                                                                                                                                                                                                                    | Type     | Default value | Environment variables |
+|------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|:-------------:|:---------------------:|
+| `--addr="…"`                 | the optional address that the looped out funds should be sent to, if let blank the funds will go to lnd's wallet                                                                                                                                                               | string   |               |        *none*         |
+| `--account="…"`              | the name of the account to generate a new address from. You can list the names of valid accounts in your backing lnd instance with "lncli wallet accounts list"                                                                                                                | string   |               |        *none*         |
+| `--account_addr_type="…"`    | the address type of the extended public key specified in account. Currently only pay-to-taproot-pubkey(p2tr) is supported                                                                                                                                                      | string   |    `p2tr`     |        *none*         |
+| `--amt="…"`                  | the amount in satoshis to loop out. To check for the minimum and maximum amounts to loop out please consult "loop terms"                                                                                                                                                       | uint     |      `0`      |        *none*         |
+| `--htlc_confs="…"`           | the number of confirmations (in blocks) that we require for the htlc extended by the server before we reveal the preimage                                                                                                                                                      | uint     |      `1`      |        *none*         |
+| `--conf_target="…"`          | the number of blocks from the swap initiation height that the on-chain HTLC should be swept within                                                                                                                                                                             | uint     |      `9`      |        *none*         |
+| `--max_swap_routing_fee="…"` | the max off-chain swap routing fee in satoshis, if not specified, a default max fee will be used                                                                                                                                                                               | int      |      `0`      |        *none*         |
+| `--fast`                     | indicate you want to swap immediately, paying potentially a higher fee. If not set the swap server might choose to wait up to 30 minutes before publishing the swap HTLC on-chain, to save on its chain fees. Not setting this flag therefore might result in a lower swap fee | bool     |    `false`    |        *none*         |
+| `--payment_timeout="…"`      | the timeout for each individual off-chain payment attempt. If not set, the default timeout of 1 hour will be used. As the payment might be retried, the actual total time may be longer                                                                                        | duration |     `0s`      |        *none*         |
+| `--asset_id="…"`             | the asset ID of the asset to loop out, if this is set, the loop daemon will require a connection to a taproot assets daemon                                                                                                                                                    | string   |               |        *none*         |
+| `--asset_edge_node="…"`      | the pubkey of the edge node of the asset to loop out, this is required if the taproot assets daemon has multiple channels of the given asset id with different edge nodes                                                                                                      | string   |               |        *none*         |
+| `--force`                    | Assumes yes during confirmation. Using this option will result in an immediate swap                                                                                                                                                                                            | bool     |    `false`    |        *none*         |
+| `--label="…"`                | an optional label for this swap,limited to 500 characters. The label may not start with our reserved prefix: [reserved]                                                                                                                                                        | string   |               |        *none*         |
+| `--verbose` (`-v`)           | show expanded details                                                                                                                                                                                                                                                          | bool     |    `false`    |        *none*         |
+| `--channel="…"`              | the comma-separated list of short channel IDs of the channels to loop out                                                                                                                                                                                                      | string   |               |        *none*         |
+| `--help` (`-h`)              | show help                                                                                                                                                                                                                                                                      | bool     |    `false`    |        *none*         |
 
 ### `in` command
 
@@ -67,18 +67,18 @@ $ loop [GLOBAL FLAGS] in [COMMAND FLAGS] amt
 
 The following flags are supported:
 
-| Name                | Description                                                                                                             | Type   | Default value |
-|---------------------|-------------------------------------------------------------------------------------------------------------------------|--------|:-------------:|
-| `--amt="…"`         | the amount in satoshis to loop in. To check for the minimum and maximum amounts to loop in please consult "loop terms"  | uint   |      `0`      |
-| `--external`        | expect htlc to be published externally                                                                                  | bool   |    `false`    |
-| `--conf_target="…"` | the target number of blocks the on-chain htlc broadcast by the swap client should confirm within                        | uint   |      `0`      |
-| `--last_hop="…"`    | the pubkey of the last hop to use for this swap                                                                         | string |
-| `--label="…"`       | an optional label for this swap,limited to 500 characters. The label may not start with our reserved prefix: [reserved] | string |
-| `--force`           | Assumes yes during confirmation. Using this option will result in an immediate swap                                     | bool   |    `false`    |
-| `--verbose` (`-v`)  | show expanded details                                                                                                   | bool   |    `false`    |
-| `--route_hints="…"` | route hints that can each be individually used to assist in reaching the invoice's destination                          | string |     `[]`      |
-| `--private`         | generates and passes routehints. Should be used if the connected node is only reachable via private channels            | bool   |    `false`    |
-| `--help` (`-h`)     | show help                                                                                                               | bool   |    `false`    |
+| Name                | Description                                                                                                             | Type   | Default value | Environment variables |
+|---------------------|-------------------------------------------------------------------------------------------------------------------------|--------|:-------------:|:---------------------:|
+| `--amt="…"`         | the amount in satoshis to loop in. To check for the minimum and maximum amounts to loop in please consult "loop terms"  | uint   |      `0`      |        *none*         |
+| `--external`        | expect htlc to be published externally                                                                                  | bool   |    `false`    |        *none*         |
+| `--conf_target="…"` | the target number of blocks the on-chain htlc broadcast by the swap client should confirm within                        | uint   |      `0`      |        *none*         |
+| `--last_hop="…"`    | the pubkey of the last hop to use for this swap                                                                         | string |               |        *none*         |
+| `--label="…"`       | an optional label for this swap,limited to 500 characters. The label may not start with our reserved prefix: [reserved] | string |               |        *none*         |
+| `--force`           | Assumes yes during confirmation. Using this option will result in an immediate swap                                     | bool   |    `false`    |        *none*         |
+| `--verbose` (`-v`)  | show expanded details                                                                                                   | bool   |    `false`    |        *none*         |
+| `--route_hints="…"` | route hints that can each be individually used to assist in reaching the invoice's destination                          | string |     `[]`      |        *none*         |
+| `--private`         | generates and passes routehints. Should be used if the connected node is only reachable via private channels            | bool   |    `false`    |        *none*         |
+| `--help` (`-h`)     | show help                                                                                                               | bool   |    `false`    |        *none*         |
 
 ### `terms` command
 
@@ -92,9 +92,9 @@ $ loop [GLOBAL FLAGS] terms [COMMAND FLAGS] [ARGUMENTS...]
 
 The following flags are supported:
 
-| Name            | Description | Type | Default value |
-|-----------------|-------------|------|:-------------:|
-| `--help` (`-h`) | show help   | bool |    `false`    |
+| Name            | Description | Type | Default value | Environment variables |
+|-----------------|-------------|------|:-------------:|:---------------------:|
+| `--help` (`-h`) | show help   | bool |    `false`    |        *none*         |
 
 ### `monitor` command
 
@@ -110,9 +110,9 @@ $ loop [GLOBAL FLAGS] monitor [COMMAND FLAGS] [ARGUMENTS...]
 
 The following flags are supported:
 
-| Name            | Description | Type | Default value |
-|-----------------|-------------|------|:-------------:|
-| `--help` (`-h`) | show help   | bool |    `false`    |
+| Name            | Description | Type | Default value | Environment variables |
+|-----------------|-------------|------|:-------------:|:---------------------:|
+| `--help` (`-h`) | show help   | bool |    `false`    |        *none*         |
 
 ### `quote` command
 
@@ -126,9 +126,9 @@ $ loop [GLOBAL FLAGS] quote [COMMAND FLAGS] [ARGUMENTS...]
 
 The following flags are supported:
 
-| Name            | Description | Type | Default value |
-|-----------------|-------------|------|:-------------:|
-| `--help` (`-h`) | show help   | bool |    `false`    |
+| Name            | Description | Type | Default value | Environment variables |
+|-----------------|-------------|------|:-------------:|:---------------------:|
+| `--help` (`-h`) | show help   | bool |    `false`    |        *none*         |
 
 ### `quote in` subcommand
 
@@ -144,15 +144,15 @@ $ loop [GLOBAL FLAGS] quote in [COMMAND FLAGS] amt
 
 The following flags are supported:
 
-| Name                     | Description                                                                                                                                                                                                    | Type   | Default value |
-|--------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------|:-------------:|
-| `--last_hop="…"`         | the pubkey of the last hop to use for the quote                                                                                                                                                                | string |
-| `--conf_target="…"`      | the target number of blocks the on-chain htlc broadcast by the swap client should confirm within                                                                                                               | uint   |      `0`      |
-| `--verbose` (`-v`)       | show expanded details                                                                                                                                                                                          | bool   |    `false`    |
-| `--private`              | generates and passes routehints. Should be used if the connected node is only reachable via private channels                                                                                                   | bool   |    `false`    |
-| `--route_hints="…"`      | route hints that can each be individually used to assist in reaching the invoice's destination                                                                                                                 | string |     `[]`      |
-| `--deposit_outpoint="…"` | one or more static address deposit outpoints to quote for. Deposit outpoints are not to be used in combination with an amount. Eachadditional outpoint can be added by specifying --deposit_outpoint tx_id:idx | string |     `[]`      |
-| `--help` (`-h`)          | show help                                                                                                                                                                                                      | bool   |    `false`    |
+| Name                     | Description                                                                                                                                                                                                    | Type   | Default value | Environment variables |
+|--------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------|:-------------:|:---------------------:|
+| `--last_hop="…"`         | the pubkey of the last hop to use for the quote                                                                                                                                                                | string |               |        *none*         |
+| `--conf_target="…"`      | the target number of blocks the on-chain htlc broadcast by the swap client should confirm within                                                                                                               | uint   |      `0`      |        *none*         |
+| `--verbose` (`-v`)       | show expanded details                                                                                                                                                                                          | bool   |    `false`    |        *none*         |
+| `--private`              | generates and passes routehints. Should be used if the connected node is only reachable via private channels                                                                                                   | bool   |    `false`    |        *none*         |
+| `--route_hints="…"`      | route hints that can each be individually used to assist in reaching the invoice's destination                                                                                                                 | string |     `[]`      |        *none*         |
+| `--deposit_outpoint="…"` | one or more static address deposit outpoints to quote for. Deposit outpoints are not to be used in combination with an amount. Eachadditional outpoint can be added by specifying --deposit_outpoint tx_id:idx | string |     `[]`      |        *none*         |
+| `--help` (`-h`)          | show help                                                                                                                                                                                                      | bool   |    `false`    |        *none*         |
 
 ### `quote out` subcommand
 
@@ -168,12 +168,12 @@ $ loop [GLOBAL FLAGS] quote out [COMMAND FLAGS] amt
 
 The following flags are supported:
 
-| Name                | Description                                                                                                                                                                                                                                                      | Type | Default value |
-|---------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------|:-------------:|
-| `--conf_target="…"` | the number of blocks from the swap initiation height that the on-chain HTLC should be swept within in a Loop Out                                                                                                                                                 | uint |      `9`      |
-| `--fast`            | Indicate you want to swap immediately, paying potentially a higher fee. If not set the swap server might choose to wait up to 30 minutes before publishing the swap HTLC on-chain, to save on chain fees. Not setting this flag might result in a lower swap fee | bool |    `false`    |
-| `--verbose` (`-v`)  | show expanded details                                                                                                                                                                                                                                            | bool |    `false`    |
-| `--help` (`-h`)     | show help                                                                                                                                                                                                                                                        | bool |    `false`    |
+| Name                | Description                                                                                                                                                                                                                                                      | Type | Default value | Environment variables |
+|---------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------|:-------------:|:---------------------:|
+| `--conf_target="…"` | the number of blocks from the swap initiation height that the on-chain HTLC should be swept within in a Loop Out                                                                                                                                                 | uint |      `9`      |        *none*         |
+| `--fast`            | Indicate you want to swap immediately, paying potentially a higher fee. If not set the swap server might choose to wait up to 30 minutes before publishing the swap HTLC on-chain, to save on chain fees. Not setting this flag might result in a lower swap fee | bool |    `false`    |        *none*         |
+| `--verbose` (`-v`)  | show expanded details                                                                                                                                                                                                                                            | bool |    `false`    |        *none*         |
+| `--help` (`-h`)     | show help                                                                                                                                                                                                                                                        | bool |    `false`    |        *none*         |
 
 ### `listauth` command
 
@@ -189,9 +189,9 @@ $ loop [GLOBAL FLAGS] listauth [COMMAND FLAGS] [ARGUMENTS...]
 
 The following flags are supported:
 
-| Name            | Description | Type | Default value |
-|-----------------|-------------|------|:-------------:|
-| `--help` (`-h`) | show help   | bool |    `false`    |
+| Name            | Description | Type | Default value | Environment variables |
+|-----------------|-------------|------|:-------------:|:---------------------:|
+| `--help` (`-h`) | show help   | bool |    `false`    |        *none*         |
 
 ### `fetchl402` command
 
@@ -207,9 +207,9 @@ $ loop [GLOBAL FLAGS] fetchl402 [COMMAND FLAGS] [ARGUMENTS...]
 
 The following flags are supported:
 
-| Name            | Description | Type | Default value |
-|-----------------|-------------|------|:-------------:|
-| `--help` (`-h`) | show help   | bool |    `false`    |
+| Name            | Description | Type | Default value | Environment variables |
+|-----------------|-------------|------|:-------------:|:---------------------:|
+| `--help` (`-h`) | show help   | bool |    `false`    |        *none*         |
 
 ### `listswaps` command
 
@@ -225,17 +225,17 @@ $ loop [GLOBAL FLAGS] listswaps [COMMAND FLAGS] [ARGUMENTS...]
 
 The following flags are supported:
 
-| Name                  | Description                                                                                                             | Type   | Default value |
-|-----------------------|-------------------------------------------------------------------------------------------------------------------------|--------|:-------------:|
-| `--loop_out_only`     | only list swaps that are loop out swaps                                                                                 | bool   |    `false`    |
-| `--loop_in_only`      | only list swaps that are loop in swaps                                                                                  | bool   |    `false`    |
-| `--pending_only`      | only list pending swaps                                                                                                 | bool   |    `false`    |
-| `--label="…"`         | an optional label for this swap,limited to 500 characters. The label may not start with our reserved prefix: [reserved] | string |
-| `--channel="…"`       | the comma-separated list of short channel IDs of the channels to loop out                                               | string |
-| `--last_hop="…"`      | the pubkey of the last hop to use for this swap                                                                         | string |
-| `--max_swaps="…"`     | Max number of swaps to return after filtering                                                                           | uint   |      `0`      |
-| `--start_time_ns="…"` | Unix timestamp in nanoseconds to select swaps initiated after this time                                                 | int    |      `0`      |
-| `--help` (`-h`)       | show help                                                                                                               | bool   |    `false`    |
+| Name                  | Description                                                                                                             | Type   | Default value | Environment variables |
+|-----------------------|-------------------------------------------------------------------------------------------------------------------------|--------|:-------------:|:---------------------:|
+| `--loop_out_only`     | only list swaps that are loop out swaps                                                                                 | bool   |    `false`    |        *none*         |
+| `--loop_in_only`      | only list swaps that are loop in swaps                                                                                  | bool   |    `false`    |        *none*         |
+| `--pending_only`      | only list pending swaps                                                                                                 | bool   |    `false`    |        *none*         |
+| `--label="…"`         | an optional label for this swap,limited to 500 characters. The label may not start with our reserved prefix: [reserved] | string |               |        *none*         |
+| `--channel="…"`       | the comma-separated list of short channel IDs of the channels to loop out                                               | string |               |        *none*         |
+| `--last_hop="…"`      | the pubkey of the last hop to use for this swap                                                                         | string |               |        *none*         |
+| `--max_swaps="…"`     | Max number of swaps to return after filtering                                                                           | uint   |      `0`      |        *none*         |
+| `--start_time_ns="…"` | Unix timestamp in nanoseconds to select swaps initiated after this time                                                 | int    |      `0`      |        *none*         |
+| `--help` (`-h`)       | show help                                                                                                               | bool   |    `false`    |        *none*         |
 
 ### `swapinfo` command
 
@@ -251,10 +251,10 @@ $ loop [GLOBAL FLAGS] swapinfo [COMMAND FLAGS] id
 
 The following flags are supported:
 
-| Name            | Description        | Type | Default value |
-|-----------------|--------------------|------|:-------------:|
-| `--id="…"`      | the ID of the swap | uint |      `0`      |
-| `--help` (`-h`) | show help          | bool |    `false`    |
+| Name            | Description        | Type | Default value | Environment variables |
+|-----------------|--------------------|------|:-------------:|:---------------------:|
+| `--id="…"`      | the ID of the swap | uint |      `0`      |        *none*         |
+| `--help` (`-h`) | show help          | bool |    `false`    |        *none*         |
 
 ### `getparams` command
 
@@ -270,9 +270,9 @@ $ loop [GLOBAL FLAGS] getparams [COMMAND FLAGS] [ARGUMENTS...]
 
 The following flags are supported:
 
-| Name            | Description | Type | Default value |
-|-----------------|-------------|------|:-------------:|
-| `--help` (`-h`) | show help   | bool |    `false`    |
+| Name            | Description | Type | Default value | Environment variables |
+|-----------------|-------------|------|:-------------:|:---------------------:|
+| `--help` (`-h`) | show help   | bool |    `false`    |        *none*         |
 
 ### `setrule` command
 
@@ -288,13 +288,13 @@ $ loop [GLOBAL FLAGS] setrule [COMMAND FLAGS] {shortchanid | peerpubkey}
 
 The following flags are supported:
 
-| Name                       | Description                                                                                                            | Type   | Default value |
-|----------------------------|------------------------------------------------------------------------------------------------------------------------|--------|:-------------:|
-| `--type="…"`               | the type of swap to perform, set to 'out' for acquiring inbound liquidity or 'in' for acquiring outbound liquidity     | string |     `out`     |
-| `--incoming_threshold="…"` | the minimum percentage of incoming liquidity to total capacity beneath which to recommend loop out to acquire incoming | int    |      `0`      |
-| `--outgoing_threshold="…"` | the minimum percentage of outbound liquidity that we do not want to drop below                                         | int    |      `0`      |
-| `--clear`                  | remove the rule currently set for the channel/peer                                                                     | bool   |    `false`    |
-| `--help` (`-h`)            | show help                                                                                                              | bool   |    `false`    |
+| Name                       | Description                                                                                                            | Type   | Default value | Environment variables |
+|----------------------------|------------------------------------------------------------------------------------------------------------------------|--------|:-------------:|:---------------------:|
+| `--type="…"`               | the type of swap to perform, set to 'out' for acquiring inbound liquidity or 'in' for acquiring outbound liquidity     | string |     `out`     |        *none*         |
+| `--incoming_threshold="…"` | the minimum percentage of incoming liquidity to total capacity beneath which to recommend loop out to acquire incoming | int    |      `0`      |        *none*         |
+| `--outgoing_threshold="…"` | the minimum percentage of outbound liquidity that we do not want to drop below                                         | int    |      `0`      |        *none*         |
+| `--clear`                  | remove the rule currently set for the channel/peer                                                                     | bool   |    `false`    |        *none*         |
+| `--help` (`-h`)            | show help                                                                                                              | bool   |    `false`    |        *none*         |
 
 ### `suggestswaps` command
 
@@ -310,9 +310,9 @@ $ loop [GLOBAL FLAGS] suggestswaps [COMMAND FLAGS] [ARGUMENTS...]
 
 The following flags are supported:
 
-| Name            | Description | Type | Default value |
-|-----------------|-------------|------|:-------------:|
-| `--help` (`-h`) | show help   | bool |    `false`    |
+| Name            | Description | Type | Default value | Environment variables |
+|-----------------|-------------|------|:-------------:|:---------------------:|
+| `--help` (`-h`) | show help   | bool |    `false`    |        *none*         |
 
 ### `setparams` command
 
@@ -328,34 +328,34 @@ $ loop [GLOBAL FLAGS] setparams [COMMAND FLAGS] [ARGUMENTS...]
 
 The following flags are supported:
 
-| Name                            | Description                                                                                                                                                                                                                                                                                  | Type     | Default value |
-|---------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|:-------------:|
-| `--sweeplimit="…"`              | the limit placed on our estimated sweep fee in sat/vByte                                                                                                                                                                                                                                     | int      |      `0`      |
-| `--feepercent="…"`              | the maximum percentage of swap amount to be used across all fee categories                                                                                                                                                                                                                   | float    |      `0`      |
-| `--maxswapfee="…"`              | the maximum percentage of swap volume we are willing to pay in server fees                                                                                                                                                                                                                   | float    |      `0`      |
-| `--maxroutingfee="…"`           | the maximum percentage of off-chain payment volume that we are willing to pay in routingfees                                                                                                                                                                                                 | float    |      `0`      |
-| `--maxprepayfee="…"`            | the maximum percentage of off-chain prepay volume that we are willing to pay in routing fees                                                                                                                                                                                                 | float    |      `0`      |
-| `--maxprepay="…"`               | the maximum no-show (prepay) in satoshis that swap suggestions should be limited to                                                                                                                                                                                                          | uint     |      `0`      |
-| `--maxminer="…"`                | the maximum miner fee in satoshis that swap suggestions should be limited to                                                                                                                                                                                                                 | uint     |      `0`      |
-| `--sweepconf="…"`               | the number of blocks from htlc height that swap suggestion sweeps should target, used to estimate max miner fee                                                                                                                                                                              | int      |      `0`      |
-| `--failurebackoff="…"`          | the amount of time, in seconds, that should pass before a channel that previously had a failed swap will be included in suggestions                                                                                                                                                          | uint     |      `0`      |
-| `--autoloop`                    | set to true to enable automated dispatch of swaps, limited to the budget set by autobudget                                                                                                                                                                                                   | bool     |    `false`    |
-| `--destaddr="…"`                | custom address to be used as destination for autoloop loop out, set to "default" in order to revert to default behavior                                                                                                                                                                      | string   |
-| `--account="…"`                 | the name of the account to generate a new address from. You can list the names of valid accounts in your backing lnd instance with "lncli wallet accounts list"                                                                                                                              | string   |
-| `--account_addr_type="…"`       | the address type of the extended public key specified in account. Currently only pay-to-taproot-pubkey(p2tr) is supported                                                                                                                                                                    | string   |    `p2tr`     |
-| `--autobudget="…"`              | the maximum amount of fees in satoshis that automatically dispatched loop out swaps may spend                                                                                                                                                                                                | uint     |      `0`      |
-| `--autobudgetrefreshperiod="…"` | the time period over which the automated loop budget is refreshed                                                                                                                                                                                                                            | duration |     `0s`      |
-| `--autoinflight="…"`            | the maximum number of automatically dispatched swaps that we allow to be in flight                                                                                                                                                                                                           | uint     |      `0`      |
-| `--minamt="…"`                  | the minimum amount in satoshis that the autoloop client will dispatch per-swap                                                                                                                                                                                                               | uint     |      `0`      |
-| `--maxamt="…"`                  | the maximum amount in satoshis that the autoloop client will dispatch per-swap                                                                                                                                                                                                               | uint     |      `0`      |
-| `--htlc_conf="…"`               | the confirmation target for loop in on-chain htlcs                                                                                                                                                                                                                                           | int      |      `0`      |
-| `--easyautoloop`                | set to true to enable easy autoloop, which will automatically dispatch swaps in order to meet the target local balance                                                                                                                                                                       | bool     |    `false`    |
-| `--localbalancesat="…"`         | the target size of total local balance in satoshis, used by easy autoloop                                                                                                                                                                                                                    | uint     |      `0`      |
-| `--asset_easyautoloop`          | set to true to enable asset easy autoloop, which will automatically dispatch asset swaps in order to meet the target local balance                                                                                                                                                           | bool     |    `false`    |
-| `--asset_id="…"`                | If set to a valid asset ID, the easyautoloop and localbalancesat flags will be set for the specified asset                                                                                                                                                                                   | string   |
-| `--asset_localbalance="…"`      | the target size of total local balance in asset units, used by asset easy autoloop                                                                                                                                                                                                           | uint     |      `0`      |
-| `--fast`                        | if set new swaps are expected to be published immediately, paying a potentially higher fee. If not set the swap server might choose to wait up to 30 minutes before publishing swap HTLCs on-chain, to save on chain fees. Not setting this flag therefore might result in a lower swap fees | bool     |    `false`    |
-| `--help` (`-h`)                 | show help                                                                                                                                                                                                                                                                                    | bool     |    `false`    |
+| Name                            | Description                                                                                                                                                                                                                                                                                  | Type     | Default value | Environment variables |
+|---------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|:-------------:|:---------------------:|
+| `--sweeplimit="…"`              | the limit placed on our estimated sweep fee in sat/vByte                                                                                                                                                                                                                                     | int      |      `0`      |        *none*         |
+| `--feepercent="…"`              | the maximum percentage of swap amount to be used across all fee categories                                                                                                                                                                                                                   | float    |      `0`      |        *none*         |
+| `--maxswapfee="…"`              | the maximum percentage of swap volume we are willing to pay in server fees                                                                                                                                                                                                                   | float    |      `0`      |        *none*         |
+| `--maxroutingfee="…"`           | the maximum percentage of off-chain payment volume that we are willing to pay in routingfees                                                                                                                                                                                                 | float    |      `0`      |        *none*         |
+| `--maxprepayfee="…"`            | the maximum percentage of off-chain prepay volume that we are willing to pay in routing fees                                                                                                                                                                                                 | float    |      `0`      |        *none*         |
+| `--maxprepay="…"`               | the maximum no-show (prepay) in satoshis that swap suggestions should be limited to                                                                                                                                                                                                          | uint     |      `0`      |        *none*         |
+| `--maxminer="…"`                | the maximum miner fee in satoshis that swap suggestions should be limited to                                                                                                                                                                                                                 | uint     |      `0`      |        *none*         |
+| `--sweepconf="…"`               | the number of blocks from htlc height that swap suggestion sweeps should target, used to estimate max miner fee                                                                                                                                                                              | int      |      `0`      |        *none*         |
+| `--failurebackoff="…"`          | the amount of time, in seconds, that should pass before a channel that previously had a failed swap will be included in suggestions                                                                                                                                                          | uint     |      `0`      |        *none*         |
+| `--autoloop`                    | set to true to enable automated dispatch of swaps, limited to the budget set by autobudget                                                                                                                                                                                                   | bool     |    `false`    |        *none*         |
+| `--destaddr="…"`                | custom address to be used as destination for autoloop loop out, set to "default" in order to revert to default behavior                                                                                                                                                                      | string   |               |        *none*         |
+| `--account="…"`                 | the name of the account to generate a new address from. You can list the names of valid accounts in your backing lnd instance with "lncli wallet accounts list"                                                                                                                              | string   |               |        *none*         |
+| `--account_addr_type="…"`       | the address type of the extended public key specified in account. Currently only pay-to-taproot-pubkey(p2tr) is supported                                                                                                                                                                    | string   |    `p2tr`     |        *none*         |
+| `--autobudget="…"`              | the maximum amount of fees in satoshis that automatically dispatched loop out swaps may spend                                                                                                                                                                                                | uint     |      `0`      |        *none*         |
+| `--autobudgetrefreshperiod="…"` | the time period over which the automated loop budget is refreshed                                                                                                                                                                                                                            | duration |     `0s`      |        *none*         |
+| `--autoinflight="…"`            | the maximum number of automatically dispatched swaps that we allow to be in flight                                                                                                                                                                                                           | uint     |      `0`      |        *none*         |
+| `--minamt="…"`                  | the minimum amount in satoshis that the autoloop client will dispatch per-swap                                                                                                                                                                                                               | uint     |      `0`      |        *none*         |
+| `--maxamt="…"`                  | the maximum amount in satoshis that the autoloop client will dispatch per-swap                                                                                                                                                                                                               | uint     |      `0`      |        *none*         |
+| `--htlc_conf="…"`               | the confirmation target for loop in on-chain htlcs                                                                                                                                                                                                                                           | int      |      `0`      |        *none*         |
+| `--easyautoloop`                | set to true to enable easy autoloop, which will automatically dispatch swaps in order to meet the target local balance                                                                                                                                                                       | bool     |    `false`    |        *none*         |
+| `--localbalancesat="…"`         | the target size of total local balance in satoshis, used by easy autoloop                                                                                                                                                                                                                    | uint     |      `0`      |        *none*         |
+| `--asset_easyautoloop`          | set to true to enable asset easy autoloop, which will automatically dispatch asset swaps in order to meet the target local balance                                                                                                                                                           | bool     |    `false`    |        *none*         |
+| `--asset_id="…"`                | If set to a valid asset ID, the easyautoloop and localbalancesat flags will be set for the specified asset                                                                                                                                                                                   | string   |               |        *none*         |
+| `--asset_localbalance="…"`      | the target size of total local balance in asset units, used by asset easy autoloop                                                                                                                                                                                                           | uint     |      `0`      |        *none*         |
+| `--fast`                        | if set new swaps are expected to be published immediately, paying a potentially higher fee. If not set the swap server might choose to wait up to 30 minutes before publishing swap HTLCs on-chain, to save on chain fees. Not setting this flag therefore might result in a lower swap fees | bool     |    `false`    |        *none*         |
+| `--help` (`-h`)                 | show help                                                                                                                                                                                                                                                                                    | bool     |    `false`    |        *none*         |
 
 ### `getinfo` command
 
@@ -371,9 +371,9 @@ $ loop [GLOBAL FLAGS] getinfo [COMMAND FLAGS] [ARGUMENTS...]
 
 The following flags are supported:
 
-| Name            | Description | Type | Default value |
-|-----------------|-------------|------|:-------------:|
-| `--help` (`-h`) | show help   | bool |    `false`    |
+| Name            | Description | Type | Default value | Environment variables |
+|-----------------|-------------|------|:-------------:|:---------------------:|
+| `--help` (`-h`) | show help   | bool |    `false`    |        *none*         |
 
 ### `abandonswap` command
 
@@ -389,10 +389,10 @@ $ loop [GLOBAL FLAGS] abandonswap [COMMAND FLAGS] ID
 
 The following flags are supported:
 
-| Name                       | Description                                                                                                        | Type | Default value |
-|----------------------------|--------------------------------------------------------------------------------------------------------------------|------|:-------------:|
-| `--i_know_what_i_am_doing` | Specify this flag if you made sure that you read and understood the following consequence of applying this command | bool |    `false`    |
-| `--help` (`-h`)            | show help                                                                                                          | bool |    `false`    |
+| Name                       | Description                                                                                                        | Type | Default value | Environment variables |
+|----------------------------|--------------------------------------------------------------------------------------------------------------------|------|:-------------:|:---------------------:|
+| `--i_know_what_i_am_doing` | Specify this flag if you made sure that you read and understood the following consequence of applying this command | bool |    `false`    |        *none*         |
+| `--help` (`-h`)            | show help                                                                                                          | bool |    `false`    |        *none*         |
 
 ### `reservations` command (aliases: `r`)
 
@@ -408,9 +408,9 @@ $ loop [GLOBAL FLAGS] reservations [COMMAND FLAGS] [ARGUMENTS...]
 
 The following flags are supported:
 
-| Name            | Description | Type | Default value |
-|-----------------|-------------|------|:-------------:|
-| `--help` (`-h`) | show help   | bool |    `false`    |
+| Name            | Description | Type | Default value | Environment variables |
+|-----------------|-------------|------|:-------------:|:---------------------:|
+| `--help` (`-h`) | show help   | bool |    `false`    |        *none*         |
 
 ### `reservations list` subcommand (aliases: `l`)
 
@@ -426,9 +426,9 @@ $ loop [GLOBAL FLAGS] reservations list [COMMAND FLAGS] [ARGUMENTS...]
 
 The following flags are supported:
 
-| Name            | Description | Type | Default value |
-|-----------------|-------------|------|:-------------:|
-| `--help` (`-h`) | show help   | bool |    `false`    |
+| Name            | Description | Type | Default value | Environment variables |
+|-----------------|-------------|------|:-------------:|:---------------------:|
+| `--help` (`-h`) | show help   | bool |    `false`    |        *none*         |
 
 ### `instantout` command
 
@@ -444,11 +444,11 @@ $ loop [GLOBAL FLAGS] instantout [COMMAND FLAGS] [ARGUMENTS...]
 
 The following flags are supported:
 
-| Name            | Description                                                                                                      | Type   | Default value |
-|-----------------|------------------------------------------------------------------------------------------------------------------|--------|:-------------:|
-| `--channel="…"` | the comma-separated list of short channel IDs of the channels to loop out                                        | string |
-| `--addr="…"`    | the optional address that the looped out funds should be sent to, if let blank the funds will go to lnd's wallet | string |
-| `--help` (`-h`) | show help                                                                                                        | bool   |    `false`    |
+| Name            | Description                                                                                                      | Type   | Default value | Environment variables |
+|-----------------|------------------------------------------------------------------------------------------------------------------|--------|:-------------:|:---------------------:|
+| `--channel="…"` | the comma-separated list of short channel IDs of the channels to loop out                                        | string |               |        *none*         |
+| `--addr="…"`    | the optional address that the looped out funds should be sent to, if let blank the funds will go to lnd's wallet | string |               |        *none*         |
+| `--help` (`-h`) | show help                                                                                                        | bool   |    `false`    |        *none*         |
 
 ### `listinstantouts` command
 
@@ -464,9 +464,9 @@ $ loop [GLOBAL FLAGS] listinstantouts [COMMAND FLAGS] [ARGUMENTS...]
 
 The following flags are supported:
 
-| Name            | Description | Type | Default value |
-|-----------------|-------------|------|:-------------:|
-| `--help` (`-h`) | show help   | bool |    `false`    |
+| Name            | Description | Type | Default value | Environment variables |
+|-----------------|-------------|------|:-------------:|:---------------------:|
+| `--help` (`-h`) | show help   | bool |    `false`    |        *none*         |
 
 ### `static` command (aliases: `s`)
 
@@ -480,9 +480,9 @@ $ loop [GLOBAL FLAGS] static [COMMAND FLAGS] [ARGUMENTS...]
 
 The following flags are supported:
 
-| Name            | Description | Type | Default value |
-|-----------------|-------------|------|:-------------:|
-| `--help` (`-h`) | show help   | bool |    `false`    |
+| Name            | Description | Type | Default value | Environment variables |
+|-----------------|-------------|------|:-------------:|:---------------------:|
+| `--help` (`-h`) | show help   | bool |    `false`    |        *none*         |
 
 ### `static new` subcommand (aliases: `n`)
 
@@ -498,9 +498,9 @@ $ loop [GLOBAL FLAGS] static new [COMMAND FLAGS] [ARGUMENTS...]
 
 The following flags are supported:
 
-| Name            | Description | Type | Default value |
-|-----------------|-------------|------|:-------------:|
-| `--help` (`-h`) | show help   | bool |    `false`    |
+| Name            | Description | Type | Default value | Environment variables |
+|-----------------|-------------|------|:-------------:|:---------------------:|
+| `--help` (`-h`) | show help   | bool |    `false`    |        *none*         |
 
 ### `static listunspent` subcommand (aliases: `l`)
 
@@ -516,11 +516,11 @@ $ loop [GLOBAL FLAGS] static listunspent [COMMAND FLAGS] [ARGUMENTS...]
 
 The following flags are supported:
 
-| Name              | Description                                                            | Type | Default value |
-|-------------------|------------------------------------------------------------------------|------|:-------------:|
-| `--min_confs="…"` | The minimum amount of confirmations an output should have to be listed | int  |      `0`      |
-| `--max_confs="…"` | The maximum number of confirmations an output could have to be listed  | int  |      `0`      |
-| `--help` (`-h`)   | show help                                                              | bool |    `false`    |
+| Name              | Description                                                            | Type | Default value | Environment variables |
+|-------------------|------------------------------------------------------------------------|------|:-------------:|:---------------------:|
+| `--min_confs="…"` | The minimum amount of confirmations an output should have to be listed | int  |      `0`      |        *none*         |
+| `--max_confs="…"` | The maximum number of confirmations an output could have to be listed  | int  |      `0`      |        *none*         |
+| `--help` (`-h`)   | show help                                                              | bool |    `false`    |        *none*         |
 
 ### `static listdeposits` subcommand
 
@@ -534,10 +534,10 @@ $ loop [GLOBAL FLAGS] static listdeposits [COMMAND FLAGS] [ARGUMENTS...]
 
 The following flags are supported:
 
-| Name            | Description                                                                                                                                                                                                                                                                                                    | Type   | Default value |
-|-----------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------|:-------------:|
-| `--filter="…"`  | specify a filter to only display deposits in the specified state. Leaving out the filter returns all deposits. The state can be one of the following:  deposited withdrawing withdrawn looping_in looped_in publish_expired_deposit sweep_htlc_timeout htlc_timeout_swept wait_for_expiry_sweep expired failed | string |
-| `--help` (`-h`) | show help                                                                                                                                                                                                                                                                                                      | bool   |    `false`    |
+| Name            | Description                                                                                                                                                                                                                                                                                                                                      | Type   | Default value | Environment variables |
+|-----------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------|:-------------:|:---------------------:|
+| `--filter="…"`  | specify a filter to only display deposits in the specified state. Leaving out the filter returns all deposits. The state can be one of the following:  deposited withdrawing withdrawn looping_in looped_in opening_channel channel_published publish_expired_deposit sweep_htlc_timeout htlc_timeout_swept wait_for_expiry_sweep expired failed | string |               |        *none*         |
+| `--help` (`-h`) | show help                                                                                                                                                                                                                                                                                                                                        | bool   |    `false`    |        *none*         |
 
 ### `static listwithdrawals` subcommand
 
@@ -551,9 +551,9 @@ $ loop [GLOBAL FLAGS] static listwithdrawals [COMMAND FLAGS] [ARGUMENTS...]
 
 The following flags are supported:
 
-| Name            | Description | Type | Default value |
-|-----------------|-------------|------|:-------------:|
-| `--help` (`-h`) | show help   | bool |    `false`    |
+| Name            | Description | Type | Default value | Environment variables |
+|-----------------|-------------|------|:-------------:|:---------------------:|
+| `--help` (`-h`) | show help   | bool |    `false`    |        *none*         |
 
 ### `static listswaps` subcommand
 
@@ -567,9 +567,9 @@ $ loop [GLOBAL FLAGS] static listswaps [COMMAND FLAGS] [ARGUMENTS...]
 
 The following flags are supported:
 
-| Name            | Description | Type | Default value |
-|-----------------|-------------|------|:-------------:|
-| `--help` (`-h`) | show help   | bool |    `false`    |
+| Name            | Description | Type | Default value | Environment variables |
+|-----------------|-------------|------|:-------------:|:---------------------:|
+| `--help` (`-h`) | show help   | bool |    `false`    |        *none*         |
 
 ### `static withdraw` subcommand (aliases: `w`)
 
@@ -585,20 +585,20 @@ $ loop [GLOBAL FLAGS] static withdraw [COMMAND FLAGS] [ARGUMENTS...]
 
 The following flags are supported:
 
-| Name                     | Description                                                                                                               | Type   | Default value |
-|--------------------------|---------------------------------------------------------------------------------------------------------------------------|--------|:-------------:|
-| `--utxo="…"`             | specify utxos as outpoints(tx:idx) which willbe withdrawn                                                                 | string |     `[]`      |
-| `--all`                  | withdraws all static address deposits                                                                                     | bool   |    `false`    |
-| `--dest_addr="…"`        | the optional address that the withdrawn funds should be sent to, if let blank the funds will go to lnd's wallet           | string |
-| `--sat_per_vbyte="…"`    | (optional) a manual fee expressed in sat/vbyte that should be used when crafting the transaction                          | uint   |      `0`      |
-| `--amt="…"` (`--amount`) | the number of satoshis that should be withdrawn from the selected deposits. The change is sent back to the static address | uint   |      `0`      |
-| `--help` (`-h`)          | show help                                                                                                                 | bool   |    `false`    |
+| Name                     | Description                                                                                                               | Type   | Default value | Environment variables |
+|--------------------------|---------------------------------------------------------------------------------------------------------------------------|--------|:-------------:|:---------------------:|
+| `--utxo="…"`             | specify utxos as outpoints(tx:idx) which willbe withdrawn                                                                 | string |     `[]`      |        *none*         |
+| `--all`                  | withdraws all static address deposits                                                                                     | bool   |    `false`    |        *none*         |
+| `--dest_addr="…"`        | the optional address that the withdrawn funds should be sent to, if let blank the funds will go to lnd's wallet           | string |               |        *none*         |
+| `--sat_per_vbyte="…"`    | (optional) a manual fee expressed in sat/vbyte that should be used when crafting the transaction                          | uint   |      `0`      |        *none*         |
+| `--amt="…"` (`--amount`) | the number of satoshis that should be withdrawn from the selected deposits. The change is sent back to the static address | uint   |      `0`      |        *none*         |
+| `--help` (`-h`)          | show help                                                                                                                 | bool   |    `false`    |        *none*         |
 
 ### `static summary` subcommand (aliases: `s`)
 
 Display a summary of static address related information.
 
-Displays various static address related information about deposits,  	withdrawals and swaps.
+Displays various static address related information about deposits,  	withdrawals, swaps and channel openings.
 
 Usage:
 
@@ -608,9 +608,9 @@ $ loop [GLOBAL FLAGS] static summary [COMMAND FLAGS] [ARGUMENTS...]
 
 The following flags are supported:
 
-| Name            | Description | Type | Default value |
-|-----------------|-------------|------|:-------------:|
-| `--help` (`-h`) | show help   | bool |    `false`    |
+| Name            | Description | Type | Default value | Environment variables |
+|-----------------|-------------|------|:-------------:|:---------------------:|
+| `--help` (`-h`) | show help   | bool |    `false`    |        *none*         |
 
 ### `static in` subcommand
 
@@ -626,18 +626,55 @@ $ loop [GLOBAL FLAGS] static in [COMMAND FLAGS] [amt] [--all | --utxo xxx:xx]
 
 The following flags are supported:
 
-| Name                     | Description                                                                                                                                                             | Type     | Default value |
-|--------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|:-------------:|
-| `--utxo="…"`             | specify the utxos of deposits as outpoints(tx:idx) that should be looped in                                                                                             | string   |     `[]`      |
-| `--all`                  | loop in all static address deposits                                                                                                                                     | bool     |    `false`    |
-| `--payment_timeout="…"`  | the maximum time in seconds that the server is allowed to take for the swap payment. The client can retry the swap with adjusted parameters after the payment timed out | duration |     `0s`      |
-| `--amt="…"` (`--amount`) | the number of satoshis that should be swapped from the selected deposits. If thereis change it is sent back to the static address                                       | uint     |      `0`      |
-| `--fast`                 | Usage: complete the swap faster by paying a higher fee, so the change output is available sooner                                                                        | bool     |    `false`    |
-| `--last_hop="…"`         | the pubkey of the last hop to use for this swap                                                                                                                         | string   |
-| `--label="…"`            | an optional label for this swap,limited to 500 characters. The label may not start with our reserved prefix: [reserved]                                                 | string   |
-| `--route_hints="…"`      | route hints that can each be individually used to assist in reaching the invoice's destination                                                                          | string   |     `[]`      |
-| `--private`              | generates and passes routehints. Should be used if the connected node is only reachable via private channels                                                            | bool     |    `false`    |
-| `--force`                | Assumes yes during confirmation. Using this option will result in an immediate swap                                                                                     | bool     |    `false`    |
-| `--verbose` (`-v`)       | show expanded details                                                                                                                                                   | bool     |    `false`    |
-| `--help` (`-h`)          | show help                                                                                                                                                               | bool     |    `false`    |
+| Name                     | Description                                                                                                                                                             | Type     | Default value | Environment variables |
+|--------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|:-------------:|:---------------------:|
+| `--utxo="…"`             | specify the utxos of deposits as outpoints(tx:idx) that should be looped in                                                                                             | string   |     `[]`      |        *none*         |
+| `--all`                  | loop in all static address deposits                                                                                                                                     | bool     |    `false`    |        *none*         |
+| `--payment_timeout="…"`  | the maximum time in seconds that the server is allowed to take for the swap payment. The client can retry the swap with adjusted parameters after the payment timed out | duration |     `0s`      |        *none*         |
+| `--amt="…"` (`--amount`) | the number of satoshis that should be swapped from the selected deposits. If thereis change it is sent back to the static address                                       | uint     |      `0`      |        *none*         |
+| `--fast`                 | Usage: complete the swap faster by paying a higher fee, so the change output is available sooner                                                                        | bool     |    `false`    |        *none*         |
+| `--last_hop="…"`         | the pubkey of the last hop to use for this swap                                                                                                                         | string   |               |        *none*         |
+| `--label="…"`            | an optional label for this swap,limited to 500 characters. The label may not start with our reserved prefix: [reserved]                                                 | string   |               |        *none*         |
+| `--route_hints="…"`      | route hints that can each be individually used to assist in reaching the invoice's destination                                                                          | string   |     `[]`      |        *none*         |
+| `--private`              | generates and passes routehints. Should be used if the connected node is only reachable via private channels                                                            | bool     |    `false`    |        *none*         |
+| `--force`                | Assumes yes during confirmation. Using this option will result in an immediate swap                                                                                     | bool     |    `false`    |        *none*         |
+| `--verbose` (`-v`)       | show expanded details                                                                                                                                                   | bool     |    `false`    |        *none*         |
+| `--help` (`-h`)          | show help                                                                                                                                                               | bool     |    `false`    |        *none*         |
+
+### `static openchannel` subcommand
+
+Open a channel to a an existing peer.
+
+Attempt to open a new channel to an existing peer with the key  	node-key.  	The channel will be initialized with local-amt satoshis locally and 	push-amt satoshis for the remote node. Note that the push-amt is 	deducted from the specified local-amt which implies that the local-amt 	must be greater than the push-amt. Also note that specifying push-amt 	means you give that amount to the remote node as part of the channel 	opening. Once the channel is open, a channelPoint (txid:vout) of the 	funding output is returned.  	If the remote peer supports the option upfront shutdown feature bit 	(query listpeers to see their supported feature bits), an address to 	enforce payout of funds on cooperative close can optionally be provided. 	Note that if you set this value, you will not be able to cooperatively 	close out to another address.  	One can also specify a short string memo to record some useful 	information about the channel using the --memo argument. This is stored 	locally only, and is purely for reference. It has no bearing on the 	channel's operation. Max allowed length is 500 characters.
+
+Usage:
+
+```bash
+$ loop [GLOBAL FLAGS] static openchannel [COMMAND FLAGS] [ARGUMENTS...]
+```
+
+The following flags are supported:
+
+| Name                                    | Description                                                                                                                                                                                                                                                                                                           | Type   | Default value | Environment variables |
+|-----------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------|:-------------:|:---------------------:|
+| `--node_key="…"`                        | the identity public key of the target node/peer serialized in compressed format                                                                                                                                                                                                                                       | string |               |        *none*         |
+| `--local_amt="…"`                       | the number of satoshis the wallet should commit to the channel                                                                                                                                                                                                                                                        | int    |      `0`      |        *none*         |
+| `--base_fee_msat="…"`                   | the base fee in milli-satoshis that will be charged for each forwarded HTLC, regardless of payment size                                                                                                                                                                                                               | uint   |      `0`      |        *none*         |
+| `--fee_rate_ppm="…"`                    | the fee rate ppm (parts per million) that will be charged proportionally based on the value of each forwarded HTLC, the lowest possible rate is 0 with a granularity of 0.000001 (millionths)                                                                                                                         | uint   |      `0`      |        *none*         |
+| `--push_amt="…"`                        | the number of satoshis to give the remote side as part of the initial commitment state, this is equivalent to first opening a channel and sending the remote party funds, but done all in one step                                                                                                                    | int    |      `0`      |        *none*         |
+| `--sat_per_vbyte="…"`                   | (optional) a manual fee expressed in sat/vbyte that should be used when crafting the transaction                                                                                                                                                                                                                      | int    |      `0`      |        *none*         |
+| `--private`                             | make the channel private, such that it won't be announced to the greater network, and nodes other than the two channel endpoints must be explicitly told about it to be able to route through it                                                                                                                      | bool   |    `false`    |        *none*         |
+| `--min_htlc_msat="…"`                   | (optional) the minimum value we will require for incoming HTLCs on the channel                                                                                                                                                                                                                                        | int    |      `0`      |        *none*         |
+| `--remote_csv_delay="…"`                | (optional) the number of blocks we will require our channel counterparty to wait before accessing its funds in case of unilateral close. If this is not set, we will scale the value according to the channel size                                                                                                    | uint   |      `0`      |        *none*         |
+| `--max_local_csv="…"`                   | (optional) the maximum number of blocks that we will allow the remote peer to require we wait before accessing our funds in the case of a unilateral close                                                                                                                                                            | uint   |      `0`      |        *none*         |
+| `--close_address="…"`                   | (optional) an address to enforce payout of our funds to on cooperative close. Note that if this value is set on channel open, you will *not* be able to cooperatively close to a different address                                                                                                                    | string |               |        *none*         |
+| `--remote_max_value_in_flight_msat="…"` | (optional) the maximum value in msat that can be pending within the channel at any given time                                                                                                                                                                                                                         | uint   |      `0`      |        *none*         |
+| `--channel_type="…"`                    | (optional) the type of channel to propose to the remote peer ("tweakless", "anchors", "taproot")                                                                                                                                                                                                                      | string |               |        *none*         |
+| `--zero_conf`                           | (optional) whether a zero-conf channel open should be attempted                                                                                                                                                                                                                                                       | bool   |    `false`    |        *none*         |
+| `--scid_alias`                          | (optional) whether a scid-alias channel type should be negotiated                                                                                                                                                                                                                                                     | bool   |    `false`    |        *none*         |
+| `--remote_reserve_sats="…"`             | (optional) the minimum number of satoshis we require the remote node to keep as a direct payment. If not specified, a default of 1% of the channel capacity will be used                                                                                                                                              | uint   |      `0`      |        *none*         |
+| `--memo="…"`                            | (optional) a note-to-self containing some useful 				information about the channel. This is stored 				locally only, and is purely for reference. It 				has no bearing on the channel's operation. Max 				allowed length is 500 characters                                                                          | string |               |        *none*         |
+| `--fundmax`                             | if set, the wallet will attempt to commit the maximum possible local amount to the channel. This must not be set at the same time as local_amt                                                                                                                                                                        | bool   |    `false`    |        *none*         |
+| `--utxo="…"`                            | a utxo specified as outpoint(tx:idx) which will be used to fund a channel. This flag can be repeatedly used to fund a channel with a selection of utxos. The selected funds can either be entirely spent by specifying the fundmax flag or partially by selecting a fraction of the sum of the outpoints in local_amt | string |     `[]`      |        *none*         |
+| `--help` (`-h`)                         | show help                                                                                                                                                                                                                                                                                                             | bool   |    `false`    |        *none*         |
 
