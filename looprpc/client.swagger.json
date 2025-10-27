@@ -946,7 +946,7 @@
     },
     "/v1/staticaddr/loopin": {
       "post": {
-        "summary": "loop:`in`\nStaticAddressLoopIn initiates a static address loop-in swap.",
+        "summary": "loop:`static in`\nStaticAddressLoopIn initiates a static address loop-in swap.",
         "operationId": "SwapClient_StaticAddressLoopIn",
         "responses": {
           "200": {
