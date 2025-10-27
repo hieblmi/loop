@@ -18,7 +18,6 @@ import (
 	"github.com/btcsuite/btcd/wire"
 	"github.com/lightninglabs/lndclient"
 	"github.com/lightninglabs/loop/fsm"
-	"github.com/lightninglabs/loop/looprpc"
 	"github.com/lightninglabs/loop/staticaddr/deposit"
 	"github.com/lightninglabs/loop/staticaddr/staticutil"
 	serverrpc "github.com/lightninglabs/loop/swapserverrpc"
@@ -79,7 +78,7 @@ type Config struct {
 }
 
 type newOpenChannelRequest struct {
-	request  *looprpc.OpenChannelRequest
+	request  *lnrpc.OpenChannelRequest
 	respChan chan *newOpenChannelResponse
 }
 
@@ -156,7 +155,7 @@ func (m *Manager) Run(ctx context.Context) error {
 // and then starts the open channel psbt flow between the client's lnd instance
 // and the server.
 func (m *Manager) OpenChannel(ctx context.Context,
-	req *looprpc.OpenChannelRequest) (*chainhash.Hash, error) {
+	req *lnrpc.OpenChannelRequest) (*chainhash.Hash, error) {
 
 	var (
 		outpoints []wire.OutPoint
@@ -183,7 +182,7 @@ func (m *Manager) OpenChannel(ctx context.Context,
 	if len(req.Outpoints) > 0 {
 		// Ensure that the deposits are in a state in which they are
 		// available for a channel open.
-		outpoints, err = toServerOutpoints(req.Outpoints)
+		outpoints, err = staticutil.ToWireOutpoints(req.Outpoints)
 		if err != nil {
 			return nil, fmt.Errorf("error parsing outpoints: %w",
 				err)
@@ -250,10 +249,10 @@ func (m *Manager) OpenChannel(ctx context.Context,
 
 	chanCommitmentType := lnrpc.CommitmentType_STATIC_REMOTE_KEY
 	switch req.CommitmentType {
-	case looprpc.CommitmentType_ANCHORS:
+	case lnrpc.CommitmentType_ANCHORS:
 		chanCommitmentType = lnrpc.CommitmentType_ANCHORS
 
-	case looprpc.CommitmentType_SIMPLE_TAPROOT:
+	case lnrpc.CommitmentType_SIMPLE_TAPROOT:
 		chanCommitmentType = lnrpc.CommitmentType_SIMPLE_TAPROOT
 	}
 
@@ -295,23 +294,6 @@ func (m *Manager) OpenChannel(ctx context.Context,
 	}
 
 	return chanTxHash, nil
-}
-
-func toServerOutpoints(outpoints []*looprpc.OutPoint) ([]wire.OutPoint,
-	error) {
-
-	var serverOutpoints []wire.OutPoint
-	for _, o := range outpoints {
-		outpointStr := fmt.Sprintf("%s:%d", o.TxidStr, o.OutputIndex)
-		newOutpoint, err := wire.NewOutPointFromString(outpointStr)
-		if err != nil {
-			return nil, err
-		}
-
-		serverOutpoints = append(serverOutpoints, *newOutpoint)
-	}
-
-	return serverOutpoints, nil
 }
 
 // openChannelPsbt starts an interactive channel open protocol that uses a
@@ -824,7 +806,7 @@ func checkPsbtFlags(req *lnrpc.OpenChannelRequest) error {
 // DeliverOpenChannelRequest forwards a open channel request to the manager main
 // loop.
 func (m *Manager) DeliverOpenChannelRequest(ctx context.Context,
-	req *looprpc.OpenChannelRequest) (*chainhash.Hash, error) {
+	req *lnrpc.OpenChannelRequest) (*chainhash.Hash, error) {
 
 	request := newOpenChannelRequest{
 		request:  req,
@@ -861,7 +843,7 @@ func (m *Manager) DeliverOpenChannelRequest(ctx context.Context,
 
 func calculateFundingTxValaues(ctx context.Context, deposits []*deposit.Deposit,
 	localAmount btcutil.Amount, fundMax bool, satPerVbyte uint64,
-	commitmentType looprpc.CommitmentType, feeEstimator Estimator) (
+	commitmentType lnrpc.CommitmentType, feeEstimator Estimator) (
 	btcutil.Amount, btcutil.Amount, error) {
 
 	var (
@@ -966,7 +948,7 @@ func calculateFundingTxValaues(ctx context.Context, deposits []*deposit.Deposit,
 // output is needed and the commitment type. The weight is used to estimate the
 // transaction fee for the channel open transaction.
 func chanOpenTxWeight(numInputs int, hasChange bool,
-	commitmentType looprpc.CommitmentType) lntypes.WeightUnit {
+	commitmentType lnrpc.CommitmentType) lntypes.WeightUnit {
 
 	var weightEstimator input.TxWeightEstimator
 	for i := 0; i < numInputs; i++ {
@@ -977,7 +959,7 @@ func chanOpenTxWeight(numInputs int, hasChange bool,
 
 	// Add the weight of the channel output.
 	switch commitmentType {
-	case looprpc.CommitmentType_SIMPLE_TAPROOT:
+	case lnrpc.CommitmentType_SIMPLE_TAPROOT:
 		weightEstimator.AddP2TROutput()
 
 	default:

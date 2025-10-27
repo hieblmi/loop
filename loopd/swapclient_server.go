@@ -33,6 +33,7 @@ import (
 	"github.com/lightninglabs/loop/staticaddr/deposit"
 	"github.com/lightninglabs/loop/staticaddr/loopin"
 	"github.com/lightninglabs/loop/staticaddr/openchannel"
+	"github.com/lightninglabs/loop/staticaddr/staticutil"
 	"github.com/lightninglabs/loop/staticaddr/withdraw"
 	"github.com/lightninglabs/loop/swap"
 	"github.com/lightninglabs/loop/swapserverrpc"
@@ -1720,7 +1721,7 @@ func (s *swapClientServer) WithdrawDeposits(ctx context.Context,
 		}
 
 	case isUtxoSelected:
-		outpoints, err = toServerOutpoints(req.Outpoints)
+		outpoints, err = staticutil.ToWireOutpoints(req.Outpoints)
 		if err != nil {
 			return nil, err
 		}
@@ -2144,13 +2145,19 @@ func (s *swapClientServer) populateBlocksUntilExpiry(ctx context.Context,
 // StaticOpenChannel initiates an open channel request using static address
 // deposits.
 func (s *swapClientServer) StaticOpenChannel(ctx context.Context,
-	req *looprpc.OpenChannelRequest) (*looprpc.StaticOpenChannelResponse,
+	req *looprpc.StaticOpenChannelRequest) (*looprpc.StaticOpenChannelResponse,
 	error) {
 
 	infof("Static open channel request received")
 
+	if req == nil || req.OpenChannelRequest == nil {
+		return &looprpc.StaticOpenChannelResponse{
+			Error: "missing open channel request",
+		}, nil
+	}
+
 	chanOpenTxHash, err := s.openChannelManager.DeliverOpenChannelRequest(
-		ctx, req,
+		ctx, req.OpenChannelRequest,
 	)
 
 	var (
@@ -2329,23 +2336,6 @@ func toServerState(state looprpc.DepositState) fsm.StateType {
 	default:
 		return fsm.EmptyState
 	}
-}
-
-func toServerOutpoints(outpoints []*looprpc.OutPoint) ([]wire.OutPoint,
-	error) {
-
-	var serverOutpoints []wire.OutPoint
-	for _, o := range outpoints {
-		outpointStr := fmt.Sprintf("%s:%d", o.TxidStr, o.OutputIndex)
-		newOutpoint, err := wire.NewOutPointFromString(outpointStr)
-		if err != nil {
-			return nil, err
-		}
-
-		serverOutpoints = append(serverOutpoints, *newOutpoint)
-	}
-
-	return serverOutpoints, nil
 }
 
 func rpcAutoloopReason(reason liquidity.Reason) (looprpc.AutoReason, error) {

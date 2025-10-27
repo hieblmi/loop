@@ -5,10 +5,10 @@ import (
 	"testing"
 
 	"github.com/btcsuite/btcd/btcutil"
-	"github.com/lightninglabs/loop/looprpc"
 	"github.com/lightninglabs/loop/staticaddr/deposit"
 	"github.com/lightninglabs/loop/test"
 	"github.com/lightningnetwork/lnd/input"
+	"github.com/lightningnetwork/lnd/lnrpc"
 	"github.com/lightningnetwork/lnd/lnwallet"
 	"github.com/lightningnetwork/lnd/lnwallet/chainfee"
 	"github.com/stretchr/testify/require"
@@ -40,14 +40,14 @@ func TestCalculateFundingTxValaues(t *testing.T) {
 		)
 
 		weightWithoutChange = chanOpenTxWeight(
-			len(allDeposits), false, looprpc.CommitmentType_ANCHORS,
+			len(allDeposits), false, lnrpc.CommitmentType_ANCHORS,
 		)
 		feeWithoutChange = chanOpenFeeRate.FeeForWeight(
 			weightWithoutChange,
 		)
 
 		weightWithChange = chanOpenTxWeight(
-			len(allDeposits), true, looprpc.CommitmentType_ANCHORS,
+			len(allDeposits), true, lnrpc.CommitmentType_ANCHORS,
 		)
 		feeWithChange = chanOpenFeeRate.FeeForWeight(
 			weightWithChange,
@@ -83,7 +83,7 @@ func TestCalculateFundingTxValaues(t *testing.T) {
 		localAmount    btcutil.Amount
 		fundMax        bool
 		satPerVbyte    uint64
-		commitmentType looprpc.CommitmentType
+		commitmentType lnrpc.CommitmentType
 		wantFundingAmt btcutil.Amount
 		wantChangeAmt  btcutil.Amount
 		wantErr        string
@@ -93,7 +93,7 @@ func TestCalculateFundingTxValaues(t *testing.T) {
 			deposits:       deposits(1, 2),
 			fundMax:        true,
 			satPerVbyte:    1,
-			commitmentType: looprpc.CommitmentType_ANCHORS,
+			commitmentType: lnrpc.CommitmentType_ANCHORS,
 			wantFundingAmt: sum(1, 2) - feeWithoutChange,
 			wantChangeAmt:  0,
 			wantErr:        "",
@@ -103,7 +103,7 @@ func TestCalculateFundingTxValaues(t *testing.T) {
 			deposits:       deposits(1, 2),
 			localAmount:    sum(1, 2) - 50_000,
 			satPerVbyte:    1,
-			commitmentType: looprpc.CommitmentType_ANCHORS,
+			commitmentType: lnrpc.CommitmentType_ANCHORS,
 			wantFundingAmt: sum(1, 2) - 50_000,
 			wantChangeAmt:  50_000 - feeWithChange,
 			wantErr:        "",
@@ -114,7 +114,7 @@ func TestCalculateFundingTxValaues(t *testing.T) {
 			localAmount:    sum(1, 2) - dustLimit + 1,
 			fundMax:        false,
 			satPerVbyte:    1,
-			commitmentType: looprpc.CommitmentType_ANCHORS,
+			commitmentType: lnrpc.CommitmentType_ANCHORS,
 			wantFundingAmt: sum(1, 2) - dustLimit + 1,
 			wantChangeAmt:  0,
 			wantErr:        "",
@@ -125,7 +125,7 @@ func TestCalculateFundingTxValaues(t *testing.T) {
 			localAmount:    sum(1, 2),
 			fundMax:        false,
 			satPerVbyte:    1,
-			commitmentType: looprpc.CommitmentType_ANCHORS,
+			commitmentType: lnrpc.CommitmentType_ANCHORS,
 			wantFundingAmt: 0,
 			wantChangeAmt:  0,
 			wantErr:        "the change doesn't cover for fees",
@@ -135,7 +135,7 @@ func TestCalculateFundingTxValaues(t *testing.T) {
 			deposits:       deposits(1, 2),
 			fundMax:        true,
 			satPerVbyte:    100_000,
-			commitmentType: looprpc.CommitmentType_ANCHORS,
+			commitmentType: lnrpc.CommitmentType_ANCHORS,
 			wantFundingAmt: 0,
 			wantChangeAmt:  0,
 			wantErr:        "minimum channel funding size",
@@ -145,7 +145,7 @@ func TestCalculateFundingTxValaues(t *testing.T) {
 			deposits:       deposits(1, 2),
 			localAmount:    sum(1, 2) - 50_000,
 			satPerVbyte:    0,
-			commitmentType: looprpc.CommitmentType_ANCHORS,
+			commitmentType: lnrpc.CommitmentType_ANCHORS,
 			wantFundingAmt: sum(1, 2) - 50_000,
 			wantChangeAmt:  50_000 - defaultFeeWithChange,
 			wantErr:        "",
@@ -158,7 +158,7 @@ func TestCalculateFundingTxValaues(t *testing.T) {
 			},
 			localAmount:    40_000,
 			satPerVbyte:    1,
-			commitmentType: looprpc.CommitmentType_ANCHORS,
+			commitmentType: lnrpc.CommitmentType_ANCHORS,
 			wantFundingAmt: 40_000,
 			wantChangeAmt:  60_000 - feeWithChange,
 			wantErr:        "is higher than an input value",
@@ -170,7 +170,7 @@ func TestCalculateFundingTxValaues(t *testing.T) {
 			},
 			localAmount:    20_000 - 1,
 			satPerVbyte:    1,
-			commitmentType: looprpc.CommitmentType_ANCHORS,
+			commitmentType: lnrpc.CommitmentType_ANCHORS,
 			wantFundingAmt: 0,
 			wantChangeAmt:  0,
 			wantErr:        "is lower than the minimum",
