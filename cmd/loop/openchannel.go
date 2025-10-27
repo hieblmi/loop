@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/lightninglabs/loop/looprpc"
+	"github.com/lightningnetwork/lnd/lnrpc"
 	"github.com/urfave/cli/v3"
 )
 
@@ -216,7 +217,7 @@ func openChannel(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	minConfs := defaultUtxoMinConf
-	req := &looprpc.OpenChannelRequest{
+	req := &lnrpc.OpenChannelRequest{
 		SatPerVbyte:                cmd.Uint64(feeRateFlag),
 		FundMax:                    cmd.Bool("fundmax"),
 		MinHtlcMsat:                cmd.Int64("min_htlc_msat"),
@@ -309,18 +310,22 @@ func openChannel(ctx context.Context, cmd *cli.Command) error {
 	case "":
 		break
 	case channelTypeTweakless:
-		req.CommitmentType = looprpc.CommitmentType_STATIC_REMOTE_KEY
+		req.CommitmentType = lnrpc.CommitmentType_STATIC_REMOTE_KEY
 
 	case channelTypeAnchors:
-		req.CommitmentType = looprpc.CommitmentType_ANCHORS
+		req.CommitmentType = lnrpc.CommitmentType_ANCHORS
 
 	case channelTypeSimpleTaproot:
-		req.CommitmentType = looprpc.CommitmentType_SIMPLE_TAPROOT
+		req.CommitmentType = lnrpc.CommitmentType_SIMPLE_TAPROOT
 	default:
 		return fmt.Errorf("unsupported channel type %v", channelType)
 	}
 
-	resp, err := client.StaticOpenChannel(ctxb, req)
+	wrappedReq := &looprpc.StaticOpenChannelRequest{
+		OpenChannelRequest: req,
+	}
+
+	resp, err := client.StaticOpenChannel(ctxb, wrappedReq)
 
 	printRespJSON(resp)
 
@@ -330,8 +335,8 @@ func openChannel(ctx context.Context, cmd *cli.Command) error {
 // UtxosToOutpoints converts a slice of UTXO strings into a slice of OutPoint
 // protobuf objects. It returns an error if no UTXOs are specified or if any
 // UTXO string cannot be parsed into an OutPoint.
-func UtxosToOutpoints(utxos []string) ([]*looprpc.OutPoint, error) {
-	var outpoints []*looprpc.OutPoint
+func UtxosToOutpoints(utxos []string) ([]*lnrpc.OutPoint, error) {
+	var outpoints []*lnrpc.OutPoint
 	if len(utxos) == 0 {
 		return nil, fmt.Errorf("no utxos specified")
 	}

@@ -136,7 +136,7 @@ type SwapClientClient interface {
 	// loop:`openchannel`
 	// StaticOpenChannel opens a channel funded by selected static address
 	// deposits.
-	StaticOpenChannel(ctx context.Context, in *OpenChannelRequest, opts ...grpc.CallOption) (*StaticOpenChannelResponse, error)
+	StaticOpenChannel(ctx context.Context, in *StaticOpenChannelRequest, opts ...grpc.CallOption) (*StaticOpenChannelResponse, error)
 }
 
 type swapClientClient struct {
@@ -440,7 +440,7 @@ func (c *swapClientClient) StaticAddressLoopIn(ctx context.Context, in *StaticAd
 	return out, nil
 }
 
-func (c *swapClientClient) StaticOpenChannel(ctx context.Context, in *OpenChannelRequest, opts ...grpc.CallOption) (*StaticOpenChannelResponse, error) {
+func (c *swapClientClient) StaticOpenChannel(ctx context.Context, in *StaticOpenChannelRequest, opts ...grpc.CallOption) (*StaticOpenChannelResponse, error) {
 	out := new(StaticOpenChannelResponse)
 	err := c.cc.Invoke(ctx, "/looprpc.SwapClient/StaticOpenChannel", in, out, opts...)
 	if err != nil {
@@ -571,7 +571,7 @@ type SwapClientServer interface {
 	// loop:`openchannel`
 	// StaticOpenChannel opens a channel funded by selected static address
 	// deposits.
-	StaticOpenChannel(context.Context, *OpenChannelRequest) (*StaticOpenChannelResponse, error)
+	StaticOpenChannel(context.Context, *StaticOpenChannelRequest) (*StaticOpenChannelResponse, error)
 	mustEmbedUnimplementedSwapClientServer()
 }
 
@@ -669,7 +669,7 @@ func (UnimplementedSwapClientServer) GetStaticAddressSummary(context.Context, *S
 func (UnimplementedSwapClientServer) StaticAddressLoopIn(context.Context, *StaticAddressLoopInRequest) (*StaticAddressLoopInResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method StaticAddressLoopIn not implemented")
 }
-func (UnimplementedSwapClientServer) StaticOpenChannel(context.Context, *OpenChannelRequest) (*StaticOpenChannelResponse, error) {
+func (UnimplementedSwapClientServer) StaticOpenChannel(context.Context, *StaticOpenChannelRequest) (*StaticOpenChannelResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method StaticOpenChannel not implemented")
 }
 func (UnimplementedSwapClientServer) mustEmbedUnimplementedSwapClientServer() {}
@@ -1229,7 +1229,7 @@ func _SwapClient_StaticAddressLoopIn_Handler(srv interface{}, ctx context.Contex
 }
 
 func _SwapClient_StaticOpenChannel_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(OpenChannelRequest)
+	in := new(StaticOpenChannelRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -1241,7 +1241,7 @@ func _SwapClient_StaticOpenChannel_Handler(srv interface{}, ctx context.Context,
 		FullMethod: "/looprpc.SwapClient/StaticOpenChannel",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SwapClientServer).StaticOpenChannel(ctx, req.(*OpenChannelRequest))
+		return srv.(SwapClientServer).StaticOpenChannel(ctx, req.(*StaticOpenChannelRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }

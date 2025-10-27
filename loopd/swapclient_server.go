@@ -37,6 +37,7 @@ import (
 	"github.com/lightninglabs/loop/swap"
 	"github.com/lightninglabs/loop/swapserverrpc"
 	"github.com/lightninglabs/taproot-assets/rfqmath"
+	"github.com/lightningnetwork/lnd/lnrpc"
 	"github.com/lightningnetwork/lnd/lnrpc/walletrpc"
 	"github.com/lightningnetwork/lnd/lntypes"
 	"github.com/lightningnetwork/lnd/queue"
@@ -2144,13 +2145,19 @@ func (s *swapClientServer) populateBlocksUntilExpiry(ctx context.Context,
 // StaticOpenChannel initiates an open channel request using static address
 // deposits.
 func (s *swapClientServer) StaticOpenChannel(ctx context.Context,
-	req *looprpc.OpenChannelRequest) (*looprpc.StaticOpenChannelResponse,
+	req *looprpc.StaticOpenChannelRequest) (*looprpc.StaticOpenChannelResponse,
 	error) {
 
 	infof("Static open channel request received")
 
+	if req == nil || req.OpenChannelRequest == nil {
+		return &looprpc.StaticOpenChannelResponse{
+			Error: "missing open channel request",
+		}, nil
+	}
+
 	chanOpenTxHash, err := s.openChannelManager.DeliverOpenChannelRequest(
-		ctx, req,
+		ctx, req.OpenChannelRequest,
 	)
 
 	var (
@@ -2331,7 +2338,7 @@ func toServerState(state looprpc.DepositState) fsm.StateType {
 	}
 }
 
-func toServerOutpoints(outpoints []*looprpc.OutPoint) ([]wire.OutPoint,
+func toServerOutpoints(outpoints []*lnrpc.OutPoint) ([]wire.OutPoint,
 	error) {
 
 	var serverOutpoints []wire.OutPoint
