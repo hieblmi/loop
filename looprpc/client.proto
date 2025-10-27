@@ -196,13 +196,13 @@ service SwapClient {
     rpc GetStaticAddressSummary (StaticAddressSummaryRequest)
         returns (StaticAddressSummaryResponse);
 
-    /* loop:`in`
+    /* loop:`static in`
     StaticAddressLoopIn initiates a static address loop-in swap.
     */
     rpc StaticAddressLoopIn (StaticAddressLoopInRequest)
         returns (StaticAddressLoopInResponse);
 
-    /* loop:`openchannel`
+    /* loop:`static openchannel`
     StaticOpenChannel opens a channel funded by selected static address
     deposits.
     */

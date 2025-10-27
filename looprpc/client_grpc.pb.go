@@ -130,10 +130,10 @@ type SwapClientClient interface {
 	// GetStaticAddressSummary returns a summary of static address related
 	// statistics.
 	GetStaticAddressSummary(ctx context.Context, in *StaticAddressSummaryRequest, opts ...grpc.CallOption) (*StaticAddressSummaryResponse, error)
-	// loop:`in`
+	// loop:`static in`
 	// StaticAddressLoopIn initiates a static address loop-in swap.
 	StaticAddressLoopIn(ctx context.Context, in *StaticAddressLoopInRequest, opts ...grpc.CallOption) (*StaticAddressLoopInResponse, error)
-	// loop:`openchannel`
+	// loop:`static openchannel`
 	// StaticOpenChannel opens a channel funded by selected static address
 	// deposits.
 	StaticOpenChannel(ctx context.Context, in *StaticOpenChannelRequest, opts ...grpc.CallOption) (*StaticOpenChannelResponse, error)
@@ -565,10 +565,10 @@ type SwapClientServer interface {
 	// GetStaticAddressSummary returns a summary of static address related
 	// statistics.
 	GetStaticAddressSummary(context.Context, *StaticAddressSummaryRequest) (*StaticAddressSummaryResponse, error)
-	// loop:`in`
+	// loop:`static in`
 	// StaticAddressLoopIn initiates a static address loop-in swap.
 	StaticAddressLoopIn(context.Context, *StaticAddressLoopInRequest) (*StaticAddressLoopInResponse, error)
-	// loop:`openchannel`
+	// loop:`static openchannel`
 	// StaticOpenChannel opens a channel funded by selected static address
 	// deposits.
 	StaticOpenChannel(context.Context, *StaticOpenChannelRequest) (*StaticOpenChannelResponse, error)
