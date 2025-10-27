@@ -791,7 +791,7 @@ func RegisterSwapClientJSONCallbacks(registry map[string]func(ctx context.Contex
 	registry["looprpc.SwapClient.StaticOpenChannel"] = func(ctx context.Context,
 		conn *grpc.ClientConn, reqJSON string, callback func(string, error)) {
 
-		req := &OpenChannelRequest{}
+		req := &StaticOpenChannelRequest{}
 		err := marshaler.Unmarshal([]byte(reqJSON), req)
 		if err != nil {
 			callback("", err)
