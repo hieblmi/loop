@@ -2,18 +2,15 @@ package main
 
 import (
 	"context"
-	"encoding/hex"
 	"errors"
 	"fmt"
-	"strconv"
-	"strings"
 
-	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/lightninglabs/loop/labels"
 	"github.com/lightninglabs/loop/looprpc"
 	"github.com/lightninglabs/loop/staticaddr/deposit"
 	"github.com/lightninglabs/loop/staticaddr/loopin"
 	"github.com/lightninglabs/loop/swapserverrpc"
+	lndcommands "github.com/lightningnetwork/lnd/cmd/commands"
 	"github.com/lightningnetwork/lnd/lnrpc"
 	"github.com/lightningnetwork/lnd/routing/route"
 	"github.com/urfave/cli/v3"
@@ -195,7 +192,7 @@ func withdraw(ctx context.Context, cmd *cli.Command) error {
 	case isAllSelected:
 	case isUtxoSelected:
 		utxos := cmd.StringSlice("utxo")
-		outpoints, err = utxosToOutpoints(utxos)
+		outpoints, err = lndcommands.UtxosToOutpoints(utxos)
 		if err != nil {
 			return err
 		}
@@ -413,46 +410,6 @@ func summary(ctx context.Context, cmd *cli.Command) error {
 	printRespJSON(resp)
 
 	return nil
-}
-
-func utxosToOutpoints(utxos []string) ([]*lnrpc.OutPoint, error) {
-	outpoints := make([]*lnrpc.OutPoint, 0, len(utxos))
-	if len(utxos) == 0 {
-		return nil, fmt.Errorf("no utxos specified")
-	}
-
-	for _, utxo := range utxos {
-		outpoint, err := NewProtoOutPoint(utxo)
-		if err != nil {
-			return nil, err
-		}
-		outpoints = append(outpoints, outpoint)
-	}
-
-	return outpoints, nil
-}
-
-// NewProtoOutPoint parses an OutPoint into its corresponding lnrpc.OutPoint
-// type.
-func NewProtoOutPoint(op string) (*lnrpc.OutPoint, error) {
-	parts := strings.Split(op, ":")
-	if len(parts) != 2 {
-		return nil, errors.New("outpoint should be of the form " +
-			"txid:index")
-	}
-	txid := parts[0]
-	if hex.DecodedLen(len(txid)) != chainhash.HashSize {
-		return nil, fmt.Errorf("invalid hex-encoded txid %v", txid)
-	}
-	outputIndex, err := strconv.Atoi(parts[1])
-	if err != nil {
-		return nil, fmt.Errorf("invalid output index: %v", err)
-	}
-
-	return &lnrpc.OutPoint{
-		TxidStr:     txid,
-		OutputIndex: uint32(outputIndex),
-	}, nil
 }
 
 var staticAddressLoopInCommand = &cli.Command{
