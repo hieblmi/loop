@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/lightninglabs/loop/looprpc"
+	lndcommands "github.com/lightningnetwork/lnd/cmd/commands"
 	"github.com/lightningnetwork/lnd/lnrpc"
 	"github.com/urfave/cli/v3"
 )
@@ -258,7 +259,7 @@ func openChannel(ctx context.Context, cmd *cli.Command) error {
 	if cmd.IsSet("utxo") {
 		utxos := cmd.StringSlice("utxo")
 
-		outpoints, err := UtxosToOutpoints(utxos)
+		outpoints, err := lndcommands.UtxosToOutpoints(utxos)
 		if err != nil {
 			return fmt.Errorf("unable to decode utxos: %w", err)
 		}
@@ -330,25 +331,6 @@ func openChannel(ctx context.Context, cmd *cli.Command) error {
 	printRespJSON(resp)
 
 	return err
-}
-
-// UtxosToOutpoints converts a slice of UTXO strings into a slice of OutPoint
-// protobuf objects. It returns an error if no UTXOs are specified or if any
-// UTXO string cannot be parsed into an OutPoint.
-func UtxosToOutpoints(utxos []string) ([]*lnrpc.OutPoint, error) {
-	var outpoints []*lnrpc.OutPoint
-	if len(utxos) == 0 {
-		return nil, fmt.Errorf("no utxos specified")
-	}
-	for _, utxo := range utxos {
-		outpoint, err := NewProtoOutPoint(utxo)
-		if err != nil {
-			return nil, err
-		}
-		outpoints = append(outpoints, outpoint)
-	}
-
-	return outpoints, nil
 }
 
 // checkNotBothSet accepts two flag names, a and b, and checks that only flag a

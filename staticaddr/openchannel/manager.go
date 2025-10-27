@@ -182,7 +182,7 @@ func (m *Manager) OpenChannel(ctx context.Context,
 	if len(req.Outpoints) > 0 {
 		// Ensure that the deposits are in a state in which they are
 		// available for a channel open.
-		outpoints, err = toServerOutpoints(req.Outpoints)
+		outpoints, err = staticutil.ToWireOutpoints(req.Outpoints)
 		if err != nil {
 			return nil, fmt.Errorf("error parsing outpoints: %w",
 				err)
@@ -294,23 +294,6 @@ func (m *Manager) OpenChannel(ctx context.Context,
 	}
 
 	return chanTxHash, nil
-}
-
-func toServerOutpoints(outpoints []*lnrpc.OutPoint) ([]wire.OutPoint,
-	error) {
-
-	var serverOutpoints []wire.OutPoint
-	for _, o := range outpoints {
-		outpointStr := fmt.Sprintf("%s:%d", o.TxidStr, o.OutputIndex)
-		newOutpoint, err := wire.NewOutPointFromString(outpointStr)
-		if err != nil {
-			return nil, err
-		}
-
-		serverOutpoints = append(serverOutpoints, *newOutpoint)
-	}
-
-	return serverOutpoints, nil
 }
 
 // openChannelPsbt starts an interactive channel open protocol that uses a
