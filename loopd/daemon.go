@@ -617,7 +617,7 @@ func (d *Daemon) initialize(withMacaroonService bool) error {
 		Signer:                    d.lnd.Signer,
 		Store:                     withdrawalStore,
 	}
-	withdrawalManager = withdraw.NewManager(withdrawalCfg, blockHeight)
+	withdrawalManager = withdraw.NewManager(withdrawalCfg)
 
 	// Static address loop-in manager setup.
 	staticAddressLoopInStore := loopin.NewSqlStore(
