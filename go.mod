@@ -39,7 +39,7 @@ require (
 	go.etcd.io/bbolt v1.4.3
 	golang.org/x/sync v0.18.0
 	google.golang.org/grpc v1.64.1
-	google.golang.org/protobuf v1.36.5
+	google.golang.org/protobuf v1.36.11
 	gopkg.in/macaroon-bakery.v2 v2.3.0
 	gopkg.in/macaroon.v2 v2.1.0
 	modernc.org/sqlite v1.34.5
