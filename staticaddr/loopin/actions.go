@@ -695,6 +695,8 @@ func (f *FSM) MonitorInvoiceAndHtlcTxAction(ctx context.Context,
 		case err = <-invoiceErrChan:
 			f.Errorf("invoice subscription error: %v", err)
 
+			return f.HandleError(err)
+
 		case <-ctx.Done():
 			return f.HandleError(ctx.Err())
 		}

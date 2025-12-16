@@ -123,6 +123,87 @@ func TestMonitorInvoiceAndHtlcTxReRegistersOnConfErr(t *testing.T) {
 	}
 }
 
+// TestMonitorInvoiceAndHtlcTxInvoiceErr asserts that invoice subscription
+// errors surface through the FSM as OnError so we don't silently hang.
+func TestMonitorInvoiceAndHtlcTxInvoiceErr(t *testing.T) {
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+
+	mockLnd := test.NewMockLnd()
+
+	clientKey, err := btcec.NewPrivateKey()
+	require.NoError(t, err)
+	serverKey, err := btcec.NewPrivateKey()
+	require.NoError(t, err)
+
+	swapHash := lntypes.Hash{9, 9, 9}
+
+	loopIn := &StaticAddressLoopIn{
+		SwapHash:              swapHash,
+		HtlcCltvExpiry:        3_000,
+		InitiationHeight:      uint32(mockLnd.Height),
+		InitiationTime:        time.Now(),
+		ProtocolVersion:       version.ProtocolVersion_V0,
+		ClientPubkey:          clientKey.PubKey(),
+		ServerPubkey:          serverKey.PubKey(),
+		PaymentTimeoutSeconds: 3_600,
+	}
+	loopIn.SetState(MonitorInvoiceAndHtlcTx)
+
+	mockLnd.Invoices[swapHash] = &lndclient.Invoice{
+		Hash:  swapHash,
+		State: invoices.ContractOpen,
+	}
+
+	cfg := &Config{
+		AddressManager: &mockAddressManager{
+			params: &address.Parameters{
+				ClientPubkey:    clientKey.PubKey(),
+				ServerPubkey:    serverKey.PubKey(),
+				ProtocolVersion: version.ProtocolVersion_V0,
+			},
+		},
+		ChainNotifier:  mockLnd.ChainNotifier,
+		DepositManager: &noopDepositManager{},
+		InvoicesClient: mockLnd.LndServices.Invoices,
+		LndClient:      mockLnd.Client,
+		ChainParams:    mockLnd.ChainParams,
+	}
+
+	f, err := NewFSM(ctx, loopIn, cfg, false)
+	require.NoError(t, err)
+
+	resultChan := make(chan fsm.EventType, 1)
+	go func() {
+		resultChan <- f.MonitorInvoiceAndHtlcTxAction(ctx, nil)
+	}()
+
+	var invSub *test.SingleInvoiceSubscription
+	select {
+	case invSub = <-mockLnd.SingleInvoiceSubcribeChannel:
+	case <-time.After(time.Second):
+		t.Fatalf("invoice subscription not registered")
+	}
+
+	// Drain the initial HTLC confirmation registration so it doesn't block.
+	select {
+	case <-mockLnd.RegisterConfChannel:
+	case <-time.After(time.Second):
+		t.Fatalf("htlc conf registration not received")
+	}
+
+	// Inject an invoice subscription error and expect the FSM to surface an
+	// error event instead of silently logging it.
+	invSub.Err <- errors.New("test invoice sub error")
+
+	select {
+	case event := <-resultChan:
+		require.Equal(t, fsm.OnError, event)
+	case <-time.After(time.Second):
+		t.Fatalf("expected invoice error to surface, got timeout")
+	}
+}
+
 // mockAddressManager is a minimal AddressManager implementation used by the
 // test FSM setup.
 type mockAddressManager struct {
