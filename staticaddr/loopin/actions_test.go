@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/btcsuite/btcd/btcec/v2"
+	"github.com/btcsuite/btcd/wire"
 	"github.com/lightninglabs/lndclient"
 	"github.com/lightninglabs/loop/fsm"
 	"github.com/lightninglabs/loop/staticaddr/address"
@@ -14,6 +15,7 @@ import (
 	"github.com/lightninglabs/loop/staticaddr/script"
 	"github.com/lightninglabs/loop/staticaddr/version"
 	"github.com/lightninglabs/loop/test"
+	"github.com/lightningnetwork/lnd/chainntnfs"
 	"github.com/lightningnetwork/lnd/invoices"
 	"github.com/lightningnetwork/lnd/lntypes"
 	"github.com/stretchr/testify/require"
@@ -201,6 +203,122 @@ func TestMonitorInvoiceAndHtlcTxInvoiceErr(t *testing.T) {
 		require.Equal(t, fsm.OnError, event)
 	case <-time.After(time.Second):
 		t.Fatalf("expected invoice error to surface, got timeout")
+	}
+}
+
+// TestMonitorInvoiceAndHtlcTxStaleConfirmation verifies we clear a stale
+// htlcConfirmed flag across a re-registration after a confirmation stream
+// error. Without the fix we would think the HTLC is confirmed and sweep on
+// timeout even though the confirmation was lost (e.g. due to a reorg).
+func TestMonitorInvoiceAndHtlcTxStaleConfirmation(t *testing.T) {
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+	defer cancel()
+
+	mockLnd := test.NewMockLnd()
+	// Start below the HTLC expiry so the first block notification doesn't
+	// trigger timeout immediately.
+	mockLnd.Height = 1
+
+	clientKey, err := btcec.NewPrivateKey()
+	require.NoError(t, err)
+	serverKey, err := btcec.NewPrivateKey()
+	require.NoError(t, err)
+
+	swapHash := lntypes.Hash{7, 7, 7}
+
+	loopIn := &StaticAddressLoopIn{
+		SwapHash:              swapHash,
+		HtlcCltvExpiry:        20,
+		InitiationHeight:      uint32(mockLnd.Height),
+		InitiationTime:        time.Now(),
+		ProtocolVersion:       version.ProtocolVersion_V0,
+		ClientPubkey:          clientKey.PubKey(),
+		ServerPubkey:          serverKey.PubKey(),
+		PaymentTimeoutSeconds: 3_600,
+	}
+	loopIn.SetState(MonitorInvoiceAndHtlcTx)
+
+	mockLnd.Invoices[swapHash] = &lndclient.Invoice{
+		Hash:  swapHash,
+		State: invoices.ContractOpen,
+	}
+
+	cfg := &Config{
+		AddressManager: &mockAddressManager{
+			params: &address.Parameters{
+				ClientPubkey:    clientKey.PubKey(),
+				ServerPubkey:    serverKey.PubKey(),
+				ProtocolVersion: version.ProtocolVersion_V0,
+			},
+		},
+		ChainNotifier:  mockLnd.ChainNotifier,
+		DepositManager: &noopDepositManager{},
+		InvoicesClient: mockLnd.LndServices.Invoices,
+		LndClient:      mockLnd.Client,
+		ChainParams:    mockLnd.ChainParams,
+	}
+
+	f, err := NewFSM(ctx, loopIn, cfg, false)
+	require.NoError(t, err)
+
+	resultChan := make(chan fsm.EventType, 1)
+	go func() {
+		resultChan <- f.MonitorInvoiceAndHtlcTxAction(ctx, nil)
+	}()
+
+	// Wait for invoice and confirmation subscriptions to be registered.
+	select {
+	case <-mockLnd.SingleInvoiceSubcribeChannel:
+	case <-ctx.Done():
+		t.Fatalf("invoice subscription not registered: %v", ctx.Err())
+	}
+
+	var firstReg *test.ConfRegistration
+	select {
+	case firstReg = <-mockLnd.RegisterConfChannel:
+	case <-ctx.Done():
+		t.Fatalf("htlc conf registration not received: %v", ctx.Err())
+	}
+
+	// Deliver a confirmation directly on the registration channel to set
+	// htlcConfirmed = true.
+	firstReg.ConfChan <- &chainntnfs.TxConfirmation{
+		Tx: &wire.MsgTx{
+			TxOut: []*wire.TxOut{
+				{
+					PkScript: firstReg.PkScript,
+				},
+			},
+		},
+	}
+
+	// Ensure the confirmation was consumed by the action before injecting
+	// an error.
+	require.Eventually(t, func() bool {
+		return len(firstReg.ConfChan) == 0
+	}, time.Second, time.Millisecond*10)
+
+	// Error the conf stream to force a re-registration; htlcConfirmed must
+	// be cleared, otherwise we'd wrongly sweep on timeout.
+	firstReg.ErrChan <- errors.New("conf stream error")
+
+	var secondReg *test.ConfRegistration
+	select {
+	case secondReg = <-mockLnd.RegisterConfChannel:
+	case <-ctx.Done():
+		t.Fatalf("htlc conf was not re-registered: %v", ctx.Err())
+	}
+	require.NotEqual(t, firstReg, secondReg)
+
+	// Advance chain past the HTLC expiry. With stale htlcConfirmed this
+	// would take the sweep branch; correct behavior is to time out.
+	require.NoError(t, mockLnd.NotifyHeight(loopIn.HtlcCltvExpiry+1))
+
+	select {
+	case event := <-resultChan:
+		require.Equal(t, OnSwapTimedOut, event)
+	case <-time.After(time.Second):
+		t.Fatalf("expected swap timeout due to stale conf, got timeout")
 	}
 }
 
