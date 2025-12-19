@@ -1,9 +1,9 @@
-FROM golang:1.24-bookworm
+FROM golang:1.24.9-trixie
 
 RUN apt-get update && apt-get install -y \
   git \
   protobuf-compiler='3.21.12*' \
-  clang-format='1:14.0*'
+  clang-format='1:19.0*'
 
 # We don't want any default values for these variables to make sure they're
 # explicitly provided by parsing the go.mod file. Otherwise we might forget to
@@ -11,7 +11,7 @@ RUN apt-get update && apt-get install -y \
 ARG PROTOBUF_VERSION
 ARG GRPC_GATEWAY_VERSION
 
-ENV PROTOC_GEN_GO_GRPC_VERSION="v1.1.0"
+ENV PROTOC_GEN_GO_GRPC_VERSION="v1.6.0"
 ENV FALAFEL_VERSION="v0.9.1"
 ENV GOCACHE=/tmp/build/.cache
 ENV GOMODCACHE=/tmp/build/.modcache
