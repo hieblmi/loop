@@ -229,9 +229,10 @@ message StaticOpenChannelRequest {
 
 message StaticOpenChannelResponse {
     /*
-    The transaction hash of the channel opening transaction.
+    The outpoint of the channel opening transaction in the format
+    "txid:output_index".
     */
-    string channel_open_tx_hash = 1;
+    string channel_open_outpoint = 1;
 };
 
 message StopDaemonRequest {

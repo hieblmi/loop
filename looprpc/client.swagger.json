@@ -2907,9 +2907,9 @@
     "looprpcStaticOpenChannelResponse": {
       "type": "object",
       "properties": {
-        "channel_open_tx_hash": {
+        "channel_open_outpoint": {
           "type": "string",
-          "description": "The transaction hash of the channel opening transaction."
+          "description": "The outpoint of the channel opening transaction in the format\n\"txid:output_index\"."
         }
       }
     },

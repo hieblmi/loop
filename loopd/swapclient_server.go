@@ -2200,19 +2200,17 @@ func (s *swapClientServer) StaticOpenChannel(ctx context.Context,
 			fmt.Errorf("missing open channel request")
 	}
 
-	chanOpenTxHash, err := s.openChannelManager.DeliverOpenChannelRequest(
+	chanOutpoint, err := s.openChannelManager.DeliverOpenChannelRequest(
 		ctx, req.OpenChannelRequest,
 	)
 
-	var (
-		txHash string
-	)
-	if chanOpenTxHash != nil {
-		txHash = chanOpenTxHash.String()
+	var outpointStr string
+	if chanOutpoint != nil {
+		outpointStr = chanOutpoint.String()
 	}
 
 	return &looprpc.StaticOpenChannelResponse{
-		ChannelOpenTxHash: txHash,
+		ChannelOpenOutpoint: outpointStr,
 	}, err
 }
 

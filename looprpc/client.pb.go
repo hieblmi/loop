@@ -722,10 +722,11 @@ func (x *StaticOpenChannelRequest) GetOpenChannelRequest() *lnrpc.OpenChannelReq
 
 type StaticOpenChannelResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The transaction hash of the channel opening transaction.
-	ChannelOpenTxHash string `protobuf:"bytes,1,opt,name=channel_open_tx_hash,json=channelOpenTxHash,proto3" json:"channel_open_tx_hash,omitempty"`
-	unknownFields     protoimpl.UnknownFields
-	sizeCache         protoimpl.SizeCache
+	// The outpoint of the channel opening transaction in the format
+	// "txid:output_index".
+	ChannelOpenOutpoint string `protobuf:"bytes,1,opt,name=channel_open_outpoint,json=channelOpenOutpoint,proto3" json:"channel_open_outpoint,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *StaticOpenChannelResponse) Reset() {
@@ -758,9 +759,9 @@ func (*StaticOpenChannelResponse) Descriptor() ([]byte, []int) {
 	return file_client_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *StaticOpenChannelResponse) GetChannelOpenTxHash() string {
+func (x *StaticOpenChannelResponse) GetChannelOpenOutpoint() string {
 	if x != nil {
-		return x.ChannelOpenTxHash
+		return x.ChannelOpenOutpoint
 	}
 	return ""
 }
@@ -6531,9 +6532,9 @@ const file_client_proto_rawDesc = "" +
 	"\n" +
 	"\fclient.proto\x12\alooprpc\x1a\x1aswapserverrpc/common.proto\x1a\x15lnrpc/lightning.proto\"g\n" +
 	"\x18StaticOpenChannelRequest\x12K\n" +
-	"\x14open_channel_request\x18\x01 \x01(\v2\x19.lnrpc.OpenChannelRequestR\x12openChannelRequest\"L\n" +
-	"\x19StaticOpenChannelResponse\x12/\n" +
-	"\x14channel_open_tx_hash\x18\x01 \x01(\tR\x11channelOpenTxHash\"\x13\n" +
+	"\x14open_channel_request\x18\x01 \x01(\v2\x19.lnrpc.OpenChannelRequestR\x12openChannelRequest\"O\n" +
+	"\x19StaticOpenChannelResponse\x122\n" +
+	"\x15channel_open_outpoint\x18\x01 \x01(\tR\x13channelOpenOutpoint\"\x13\n" +
 	"\x11StopDaemonRequest\"\x14\n" +
 	"\x12StopDaemonResponse\"\xff\x06\n" +
 	"\x0eLoopOutRequest\x12\x10\n" +
