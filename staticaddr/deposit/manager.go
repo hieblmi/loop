@@ -395,6 +395,7 @@ func (m *Manager) listUnspentWithBestHeight(ctx context.Context) (
 	return nil, 0, errors.New("unable to get stable best block while " +
 		"listing deposits")
 }
+
 // createNewDeposit transforms the wallet utxo into a deposit struct and stores
 // it in our database and manager memory.
 func (m *Manager) createNewDeposit(ctx context.Context,
