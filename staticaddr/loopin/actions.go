@@ -690,17 +690,23 @@ func (f *FSM) MonitorInvoiceAndHtlcTxAction(ctx context.Context,
 	var (
 		riskAcceptedChan <-chan *swapserverrpc.
 					ServerStaticLoopInRiskAcceptedNotification
-		cancelRiskAcceptedSubscription = func() {}
+		riskRejectedChan <-chan *swapserverrpc.
+					ServerStaticLoopInRiskRejectedNotification
+		cancelRiskNotificationSubscriptions = func() {}
 	)
 	if f.cfg.NotificationManager != nil {
-		acceptedCtx, cancel := context.WithCancel(ctx)
-		cancelRiskAcceptedSubscription = cancel
+		notificationCtx, cancel := context.WithCancel(ctx)
+		cancelRiskNotificationSubscriptions = cancel
 		riskAcceptedChan = f.cfg.NotificationManager.
 			SubscribeStaticLoopInRiskAccepted(
-				acceptedCtx, f.loopIn.SwapHash,
+				notificationCtx, f.loopIn.SwapHash,
+			)
+		riskRejectedChan = f.cfg.NotificationManager.
+			SubscribeStaticLoopInRiskRejected(
+				notificationCtx, f.loopIn.SwapHash,
 			)
 	}
-	defer cancelRiskAcceptedSubscription()
+	defer cancelRiskNotificationSubscriptions()
 	legacyFallbackEnabled := f.cfg.NotificationManager == nil
 
 	htlcConfirmed := false
@@ -746,6 +752,10 @@ func (f *FSM) MonitorInvoiceAndHtlcTxAction(ctx context.Context,
 		deadlineStarted = true
 	}
 
+	invoicePaymentStarted := invoice.State == invoices.ContractAccepted ||
+		invoice.State == invoices.ContractSettled
+	invoiceCanceled := invoice.State == invoices.ContractCanceled
+
 	if invoice.State == invoices.ContractCanceled {
 		// If the invoice was canceled previously we end our
 		// subscription to invoice updates.
@@ -762,6 +772,38 @@ func (f *FSM) MonitorInvoiceAndHtlcTxAction(ctx context.Context,
 		// Reuse the same helper as InitHtlcAction so timeout cleanup follows
 		// the same detached-context path as early-init cleanup.
 		f.cancelSwapInvoice(ctx)
+		invoiceCanceled = true
+	}
+
+	rejectIfOriginalDepositsVanished := func() (fsm.EventType, bool) {
+		if deadlineStarted || htlcConfirmed || invoicePaymentStarted ||
+			invoiceCanceled {
+
+			return fsm.NoOp, false
+		}
+
+		unavailable, err := f.originalDepositOutpointUnavailable(ctx)
+		if err != nil {
+			f.Warnf("unable to check original deposit outpoints: %v",
+				err)
+
+			return fsm.NoOp, false
+		}
+		if !unavailable {
+			return fsm.NoOp, false
+		}
+
+		err = errors.New("original deposit outpoint no longer available")
+		f.Warnf("%v, canceling swap invoice", err)
+		cancelInvoiceSubscription()
+		f.cancelSwapInvoice(ctx)
+		invoiceCanceled = true
+
+		return f.HandleError(err), true
+	}
+
+	if event, done := rejectIfOriginalDepositsVanished(); done {
+		return event
 	}
 
 	for {
@@ -834,7 +876,31 @@ func (f *FSM) MonitorInvoiceAndHtlcTxAction(ctx context.Context,
 
 			startPaymentDeadline("risk accepted notification")
 
+		case riskRejected, ok := <-riskRejectedChan:
+			if !ok {
+				riskRejectedChan = nil
+				continue
+			}
+
+			if !bytes.Equal(
+				riskRejected.SwapHash, f.loopIn.SwapHash[:],
+			) {
+
+				continue
+			}
+
+			cancelInvoiceSubscription()
+			f.cancelSwapInvoice(ctx)
+
+			return f.HandleError(errors.New(
+				"server rejected confirmation risk wait",
+			))
+
 		case currentHeight := <-blockChan:
+			if event, done := rejectIfOriginalDepositsVanished(); done {
+				return event
+			}
+
 			depositConfirmationHeights :=
 				selectedDepositConfirmationHeights(f.loopIn)
 
@@ -907,6 +973,14 @@ func (f *FSM) MonitorInvoiceAndHtlcTxAction(ctx context.Context,
 			if !ok {
 				invoiceUpdateChan = nil
 				continue
+			}
+
+			switch update.State {
+			case invoices.ContractAccepted, invoices.ContractSettled:
+				invoicePaymentStarted = true
+
+			case invoices.ContractCanceled:
+				invoiceCanceled = true
 			}
 
 			if event, done := f.handleInvoiceUpdate(update); done {
