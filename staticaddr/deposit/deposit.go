@@ -29,6 +29,10 @@ func (r *ID) FromByteSlice(b []byte) error {
 
 // Deposit bundles an utxo at a static address together with manager-relevant
 // data.
+//
+// Lock order: if both Manager.mu and a Deposit lock are needed, acquire
+// Manager.mu before Deposit.Lock. Never acquire Manager.mu while holding a
+// Deposit lock.
 type Deposit struct {
 	sync.Mutex
 
@@ -69,14 +73,21 @@ func (d *Deposit) IsInFinalState() bool {
 	d.Lock()
 	defer d.Unlock()
 
+	// Replaced is inactive from the deposit FSM's point of view. The manager may
+	// still revive the same record if lnd reports the exact outpoint again after
+	// a transient wallet-view miss.
 	return d.state == Expired || d.state == Withdrawn ||
 		d.state == LoopedIn || d.state == HtlcTimeoutSwept ||
-		d.state == ChannelPublished
+		d.state == ChannelPublished || d.state == Replaced
 }
 
 func (d *Deposit) IsExpired(currentHeight, expiry uint32) bool {
 	d.Lock()
 	defer d.Unlock()
+
+	if d.ConfirmationHeight <= 0 {
+		return false
+	}
 
 	return currentHeight >= uint32(d.ConfirmationHeight)+expiry
 }
