@@ -34,6 +34,12 @@ func (s *staticAddrDepositStore) UpdateDeposit(context.Context,
 	return nil
 }
 
+func (s *staticAddrDepositStore) UpdateRecoveredDeposit(context.Context,
+	*deposit.Deposit) error {
+
+	return nil
+}
+
 func (s *staticAddrDepositStore) GetDeposit(context.Context,
 	deposit.ID) (*deposit.Deposit, error) {
 

@@ -122,6 +122,9 @@ func (m *mockAddressManager) GetStaticAddressParameters(ctx context.Context) (
 	*address.Parameters, error) {
 
 	args := m.Called(ctx)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
 
 	return args.Get(0).(*address.Parameters),
 		args.Error(1)
@@ -158,6 +161,27 @@ func (m *mockAddressManager) GetParameters(
 	}
 
 	return args.Get(0).(*address.Parameters)
+}
+
+func (m *mockAddressManager) RestoreAddress(_ context.Context,
+	params *address.Parameters) (*btcutil.AddressTaproot, bool, error) {
+
+	if !m.hasExpectation("RestoreAddress") {
+		params.ID = 1
+		addr, err := m.GetTaprootAddress(
+			params.ClientPubkey, params.ServerPubkey,
+			int64(params.Expiry),
+		)
+		return addr, true, err
+	}
+
+	args := m.Called(params)
+	if args.Get(0) == nil {
+		return nil, args.Bool(1), args.Error(2)
+	}
+
+	return args.Get(0).(*btcutil.AddressTaproot), args.Bool(1),
+		args.Error(2)
 }
 
 func (m *mockAddressManager) GetStaticAddress(ctx context.Context) (
@@ -202,6 +226,13 @@ func (s *mockStore) UpdateDeposit(ctx context.Context, deposit *Deposit) error {
 	return args.Error(0)
 }
 
+func (s *mockStore) UpdateRecoveredDeposit(ctx context.Context,
+	deposit *Deposit) error {
+
+	args := s.Called(ctx, deposit)
+	return args.Error(0)
+}
+
 func (s *mockStore) GetDeposit(ctx context.Context, depositID ID) (*Deposit,
 	error) {
 
@@ -213,6 +244,10 @@ func (s *mockStore) DepositForOutpoint(ctx context.Context,
 	outpoint string) (*Deposit, error) {
 
 	args := s.Called(ctx, outpoint)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+
 	return args.Get(0).(*Deposit), args.Error(1)
 }
 
@@ -273,7 +308,8 @@ func (m *MockChainKit) RawClientWithMacAuth(
 func (m *MockChainKit) GetBlock(context.Context, chainhash.Hash) (
 	*wire.MsgBlock, error) {
 
-	panic("unexpected GetBlock call")
+	args := m.Called()
+	return args.Get(0).(*wire.MsgBlock), args.Error(1)
 }
 
 func (m *MockChainKit) GetBlockHeader(context.Context, chainhash.Hash) (
@@ -294,7 +330,8 @@ func (m *MockChainKit) GetBestBlock(ctx context.Context) (
 func (m *MockChainKit) GetBlockHash(context.Context, int64) (
 	chainhash.Hash, error) {
 
-	panic("unexpected GetBlockHash call")
+	args := m.Called()
+	return args.Get(0).(chainhash.Hash), args.Error(1)
 }
 
 // TestManager checks that the manager processes the right channel notifications
