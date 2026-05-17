@@ -3732,7 +3732,7 @@ func testAddSweepReturnsContextErrorOnFetchCancellation(t *testing.T,
 	defer test.Guard(t)()
 
 	lnd := test.NewMockLnd()
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 
 	batcher := NewBatcher(
 		lnd.WalletKit, lnd.ChainNotifier, lnd.Signer,
