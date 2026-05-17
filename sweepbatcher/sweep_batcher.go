@@ -781,14 +781,14 @@ func (b *Batcher) PresignSweepsGroup(ctx context.Context, inputs []Input,
 // notifier is provided, the batcher sends back sweeping results through it.
 func (b *Batcher) AddSweep(ctx context.Context, sweepReq *SweepRequest) error {
 	// If the batcher or the caller is shutting down, quit now.
-	err := b.addSweepExitErrIfAny(ctx)
+	err := b.shutdownOrCancelErrIfAny(ctx)
 	if err != nil {
 		return err
 	}
 
 	sweeps, err := b.fetchSweeps(ctx, *sweepReq)
 	if err != nil {
-		if exitErr := b.addSweepExitErrIfAny(ctx); exitErr != nil {
+		if exitErr := b.shutdownOrCancelErrIfAny(ctx); exitErr != nil {
 			return exitErr
 		}
 
@@ -805,7 +805,7 @@ func (b *Batcher) AddSweep(ctx context.Context, sweepReq *SweepRequest) error {
 
 	completed, err := b.store.GetSweepStatus(ctx, sweep.outpoint)
 	if err != nil {
-		if exitErr := b.addSweepExitErrIfAny(ctx); exitErr != nil {
+		if exitErr := b.shutdownOrCancelErrIfAny(ctx); exitErr != nil {
 			return exitErr
 		}
 
@@ -822,7 +822,7 @@ func (b *Batcher) AddSweep(ctx context.Context, sweepReq *SweepRequest) error {
 		// on-chain confirmations to prevent issues caused by reorgs.
 		parentBatch, err = b.store.GetParentBatch(ctx, sweep.outpoint)
 		if err != nil {
-			if exitErr := b.addSweepExitErrIfAny(ctx); exitErr != nil {
+			if exitErr := b.shutdownOrCancelErrIfAny(ctx); exitErr != nil {
 				return exitErr
 			}
 
@@ -837,7 +837,7 @@ func (b *Batcher) AddSweep(ctx context.Context, sweepReq *SweepRequest) error {
 
 	minRelayFeeRate, err := b.wallet.MinRelayFee(ctx)
 	if err != nil {
-		if exitErr := b.addSweepExitErrIfAny(ctx); exitErr != nil {
+		if exitErr := b.shutdownOrCancelErrIfAny(ctx); exitErr != nil {
 			return exitErr
 		}
 
@@ -853,7 +853,7 @@ func (b *Batcher) AddSweep(ctx context.Context, sweepReq *SweepRequest) error {
 			b.chainParams,
 		)
 		if err != nil {
-			if exitErr := b.addSweepExitErrIfAny(ctx); exitErr != nil {
+			if exitErr := b.shutdownOrCancelErrIfAny(ctx); exitErr != nil {
 				return exitErr
 			}
 
@@ -881,14 +881,14 @@ func (b *Batcher) AddSweep(ctx context.Context, sweepReq *SweepRequest) error {
 		return ErrBatcherShuttingDown
 
 	case <-ctx.Done():
-		return b.addSweepExitErrIfAny(ctx)
+		return b.shutdownOrCancelErrIfAny(ctx)
 	}
 }
 
-// addSweepExitErrIfAny returns the terminal error to use when AddSweep races
-// with shutdown or caller cancellation. It returns nil if AddSweep should
-// continue.
-func (b *Batcher) addSweepExitErrIfAny(ctx context.Context) error {
+// shutdownOrCancelErrIfAny returns the terminal error to use when caller-facing
+// batcher methods race with shutdown or caller cancellation. It returns nil if
+// the operation should continue.
+func (b *Batcher) shutdownOrCancelErrIfAny(ctx context.Context) error {
 	select {
 	case <-b.quit:
 		return ErrBatcherShuttingDown
