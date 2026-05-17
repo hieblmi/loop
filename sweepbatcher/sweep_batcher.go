@@ -789,6 +789,9 @@ func (b *Batcher) AddSweep(ctx context.Context, sweepReq *SweepRequest) error {
 	sweeps, err := b.fetchSweeps(ctx, *sweepReq)
 	if err != nil {
 		if exitErr := b.shutdownOrCancelErrIfAny(ctx); exitErr != nil {
+			infof("fetchSweeps failed during shutdown, returning "+
+				"%v instead of %v.", exitErr, err)
+
 			return exitErr
 		}
 
@@ -806,6 +809,10 @@ func (b *Batcher) AddSweep(ctx context.Context, sweepReq *SweepRequest) error {
 	completed, err := b.store.GetSweepStatus(ctx, sweep.outpoint)
 	if err != nil {
 		if exitErr := b.shutdownOrCancelErrIfAny(ctx); exitErr != nil {
+			infof("GetSweepStatus failed for sweep %v during "+
+				"shutdown, returning %v instead of %v.",
+				sweep.outpoint, exitErr, err)
+
 			return exitErr
 		}
 
@@ -823,6 +830,10 @@ func (b *Batcher) AddSweep(ctx context.Context, sweepReq *SweepRequest) error {
 		parentBatch, err = b.store.GetParentBatch(ctx, sweep.outpoint)
 		if err != nil {
 			if exitErr := b.shutdownOrCancelErrIfAny(ctx); exitErr != nil {
+				infof("GetParentBatch failed for sweep %v "+
+					"during shutdown, returning %v instead "+
+					"of %v.", sweep.outpoint, exitErr, err)
+
 				return exitErr
 			}
 
@@ -838,6 +849,9 @@ func (b *Batcher) AddSweep(ctx context.Context, sweepReq *SweepRequest) error {
 	minRelayFeeRate, err := b.wallet.MinRelayFee(ctx)
 	if err != nil {
 		if exitErr := b.shutdownOrCancelErrIfAny(ctx); exitErr != nil {
+			infof("MinRelayFee failed during shutdown, returning "+
+				"%v instead of %v.", exitErr, err)
+
 			return exitErr
 		}
 
@@ -854,6 +868,11 @@ func (b *Batcher) AddSweep(ctx context.Context, sweepReq *SweepRequest) error {
 		)
 		if err != nil {
 			if exitErr := b.shutdownOrCancelErrIfAny(ctx); exitErr != nil {
+				infof("ensurePresigned failed for primary "+
+					"sweep %v during shutdown, returning %v "+
+					"instead of %v.", sweep.outpoint,
+					exitErr, err)
+
 				return exitErr
 			}
 
