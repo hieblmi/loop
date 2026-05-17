@@ -3712,6 +3712,8 @@ func (f *sweepFetcherMock) FetchSweep(ctx context.Context, _ lntypes.Hash,
 	return f.store[outpoint], nil
 }
 
+// cancelingSweepFetcher cancels its caller context while returning a backend
+// fetch error.
 type cancelingSweepFetcher struct {
 	cancel context.CancelFunc
 }
@@ -3726,6 +3728,9 @@ func (f *cancelingSweepFetcher) FetchSweep(context.Context, lntypes.Hash,
 	return nil, driver.ErrBadConn
 }
 
+// testAddSweepReturnsContextErrorOnFetchCancellation asserts that AddSweep
+// returns context.Canceled instead of a backend error when sweep fetching races
+// with caller cancellation.
 func testAddSweepReturnsContextErrorOnFetchCancellation(t *testing.T,
 	_ testStore, batcherStore testBatcherStore) {
 
