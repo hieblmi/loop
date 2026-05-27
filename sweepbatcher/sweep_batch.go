@@ -1882,6 +1882,17 @@ func (b *batch) musig2sign(ctx context.Context, inputIndex int, sweep sweep,
 		return nil, err
 	}
 
+	if len(serverNonce) != musig2.PubNonceSize {
+		return nil, fmt.Errorf("invalid server nonce length: got %d, "+
+			"want %d", len(serverNonce), musig2.PubNonceSize)
+	}
+
+	if len(serverSig) != input.MuSig2PartialSigSize {
+		return nil, fmt.Errorf("invalid server partial signature "+
+			"length: got %d, want %d", len(serverSig),
+			input.MuSig2PartialSigSize)
+	}
+
 	var serverPublicNonce [musig2.PubNonceSize]byte
 	copy(serverPublicNonce[:], serverNonce)
 

@@ -15,6 +15,7 @@ import (
 
 	"github.com/btcsuite/btcd/blockchain"
 	"github.com/btcsuite/btcd/btcec/v2"
+	"github.com/btcsuite/btcd/btcec/v2/schnorr/musig2"
 	"github.com/btcsuite/btcd/btcutil"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
@@ -87,7 +88,12 @@ func testMuSig2SignSweep(ctx context.Context,
 	prevoutMap map[wire.OutPoint]*wire.TxOut) (
 	[]byte, []byte, error) {
 
-	return nil, nil, nil
+	return testMuSig2SigningData()
+}
+
+func testMuSig2SigningData() ([]byte, []byte, error) {
+	return make([]byte, musig2.PubNonceSize),
+		make([]byte, input.MuSig2PartialSigSize), nil
 }
 
 var customSignature = func() []byte {
@@ -5024,7 +5030,7 @@ func testWithMixedBatch(t *testing.T, store testStore,
 		[]byte, []byte, error) {
 
 		if swapHash == swapHashes[2] {
-			return nil, nil, nil
+			return testMuSig2SigningData()
 		} else {
 			return nil, nil, fmt.Errorf("test error")
 		}
@@ -5377,14 +5383,14 @@ func testWithMixedBatchLarge(t *testing.T, store testStore,
 			} else {
 				swapHash2Used = true
 
-				return nil, nil, nil
+				return testMuSig2SigningData()
 			}
 
 		case swapHash == preimages[5].Hash():
-			return nil, nil, nil
+			return testMuSig2SigningData()
 
 		case swapHash == preimages[8].Hash():
-			return nil, nil, nil
+			return testMuSig2SigningData()
 
 		default:
 			return nil, nil, fmt.Errorf("test error")
@@ -5431,7 +5437,7 @@ func testWithMixedBatchCoopOnly(t *testing.T, store testStore,
 		prevoutMap map[wire.OutPoint]*wire.TxOut) (
 		[]byte, []byte, error) {
 
-		return nil, nil, nil
+		return testMuSig2SigningData()
 	}
 
 	// All the sweeps are cooperative.
