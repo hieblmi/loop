@@ -405,13 +405,9 @@ func (s *grpcSwapServerClient) NewLoopOutSwap(ctx context.Context,
 		return nil, err
 	}
 
-	var senderKey [33]byte
-	copy(senderKey[:], swapResp.SenderKey)
-
-	// Validate sender key.
-	_, err = btcec.ParsePubKey(senderKey[:])
+	senderKey, err := parseServerPubKey("sender key", swapResp.SenderKey)
 	if err != nil {
-		return nil, fmt.Errorf("invalid sender key: %v", err)
+		return nil, err
 	}
 
 	return &newLoopOutResponse{
@@ -470,14 +466,22 @@ func (s *grpcSwapServerClient) NewLoopInSwap(ctx context.Context,
 		return nil, err
 	}
 
-	var receiverKey, receiverInternalKey [33]byte
-	copy(receiverKey[:], swapResp.ReceiverKey)
-	copy(receiverInternalKey[:], swapResp.ReceiverInternalPubkey)
-
-	// Validate receiver key.
-	_, err = btcec.ParsePubKey(receiverKey[:])
+	receiverKey, err := parseServerPubKey(
+		"receiver key", swapResp.ReceiverKey,
+	)
 	if err != nil {
-		return nil, fmt.Errorf("invalid sender key: %v", err)
+		return nil, err
+	}
+
+	var receiverInternalKey [33]byte
+	if loopdb.CurrentProtocolVersion() >= loopdb.ProtocolVersionMuSig2 {
+		receiverInternalKey, err = parseServerPubKey(
+			"receiver internal key",
+			swapResp.ReceiverInternalPubkey,
+		)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return &newLoopInResponse{
@@ -486,6 +490,23 @@ func (s *grpcSwapServerClient) NewLoopInSwap(ctx context.Context,
 		expiry:              swapResp.Expiry,
 		serverMessage:       swapResp.ServerMessage,
 	}, nil
+}
+
+func parseServerPubKey(name string, keyBytes []byte) ([33]byte, error) {
+	if len(keyBytes) != 33 {
+		return [33]byte{}, fmt.Errorf("invalid %s length: got %d, "+
+			"want 33", name, len(keyBytes))
+	}
+
+	var key [33]byte
+	copy(key[:], keyBytes)
+
+	_, err := btcec.ParsePubKey(key[:])
+	if err != nil {
+		return [33]byte{}, fmt.Errorf("invalid %s: %v", name, err)
+	}
+
+	return key, nil
 }
 
 // ServerUpdate summarizes an update from the swap server.
