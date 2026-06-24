@@ -262,16 +262,16 @@ func (f *FSM) InitHtlcAction(ctx context.Context,
 	)
 	extremelyHighFee := extremelyHighFeeRate.FeeForWeight(htlcWeight)
 
-	f.Debugf("htlc fee validation: "+
-		"deposit_count=%d, total_deposit=%v, "+
+	f.Debugf("static address loop-in htlc fee validation: "+
+		"swap_hash=%v, deposit_count=%d, total_deposit=%v, "+
 		"swap_amount=%v, change_amount=%v, has_change=%v, "+
 		"htlc_weight=%v, standard_fee_rate=%v, standard_fee=%v, "+
 		"high_fee_rate=%v, high_fee=%v, extreme_fee_rate=%v, "+
 		"extreme_fee=%v, max_fee=%v, max_backup_fee=%v",
-		len(f.loopIn.Deposits), totalDepositAmount, swapAmount,
-		changeAmount, hasChange, htlcWeight, feeRate, fee, highFeeRate,
-		highFee, extremelyHighFeeRate, extremelyHighFee, maxHtlcTxFee,
-		maxHtlcTxBackupFee)
+		f.loopIn.SwapHash, len(f.loopIn.Deposits), totalDepositAmount,
+		swapAmount, changeAmount, hasChange, htlcWeight, feeRate, fee,
+		highFeeRate, highFee, extremelyHighFeeRate, extremelyHighFee,
+		maxHtlcTxFee, maxHtlcTxBackupFee)
 
 	if fee > maxHtlcTxFee {
 		// Abort the swap by pushing empty sigs to the server.
