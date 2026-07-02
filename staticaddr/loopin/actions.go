@@ -619,8 +619,6 @@ func (f *FSM) MonitorInvoiceAndHtlcTxAction(ctx context.Context,
 		return f.HandleError(err)
 	}
 
-	htlcConfirmed := false
-
 	invoice, err := f.cfg.LndClient.LookupInvoice(ctx, f.loopIn.SwapHash)
 	if err != nil {
 		if ctx.Err() != nil {
@@ -662,6 +660,9 @@ func (f *FSM) MonitorInvoiceAndHtlcTxAction(ctx context.Context,
 		cancelInvoiceSubscription()
 	}
 
+	htlcConfirmed := false
+	invoiceCanceledForNonPayment := invoice.State == invoices.ContractCanceled
+
 	cancelInvoice := func() {
 		f.Errorf("timeout waiting for invoice to be " +
 			"paid, canceling invoice")
@@ -672,6 +673,39 @@ func (f *FSM) MonitorInvoiceAndHtlcTxAction(ctx context.Context,
 		// Reuse the same helper as InitHtlcAction so timeout cleanup
 		// follows the same detached-context path as early-init cleanup.
 		f.cancelSwapInvoice()
+		invoice.State = invoices.ContractCanceled
+		invoiceCanceledForNonPayment = true
+	}
+
+	depositsInState := func(state fsm.StateType) bool {
+		if len(f.loopIn.Deposits) == 0 {
+			return false
+		}
+
+		for _, d := range f.loopIn.Deposits {
+			if d == nil || !d.IsInState(state) {
+				return false
+			}
+		}
+
+		return true
+	}
+
+	transitionDepositsToHtlcTimeout := func(reason string) {
+		if depositsInState(deposit.SweepHtlcTimeout) {
+			return
+		}
+
+		err = f.cfg.DepositManager.TransitionDeposits(
+			ctx, f.loopIn.Deposits,
+			deposit.OnSweepingHtlcTimeout,
+			deposit.SweepHtlcTimeout,
+		)
+		if err != nil {
+			log.Errorf("unable to transition deposits to the htlc "+
+				"timeout sweeping state after %s: %v", reason,
+				err)
+		}
 	}
 
 	for {
@@ -680,6 +714,11 @@ func (f *FSM) MonitorInvoiceAndHtlcTxAction(ctx context.Context,
 			f.Infof("htlc tx confirmed")
 
 			htlcConfirmed = true
+			if invoiceCanceledForNonPayment {
+				transitionDepositsToHtlcTimeout(
+					"htlc confirmation after invoice cancellation",
+				)
+			}
 
 		case err = <-htlcErrConfChan:
 			if ctx.Err() != nil {
@@ -731,10 +770,14 @@ func (f *FSM) MonitorInvoiceAndHtlcTxAction(ctx context.Context,
 			// re-enable them for loop-ins and withdrawals.
 			cancelInvoice()
 
-			err = f.unlockDeposits(ctx)
-			if err != nil {
-				f.Errorf("unable to unlock deposits after "+
-					"payment deadline: %v", err)
+			if htlcConfirmed {
+				transitionDepositsToHtlcTimeout("payment deadline")
+			} else {
+				err = f.unlockDeposits(ctx)
+				if err != nil {
+					f.Errorf("unable to unlock deposits after "+
+						"payment deadline: %v", err)
+				}
 			}
 
 		case currentHeight := <-blockChan:
@@ -775,16 +818,7 @@ func (f *FSM) MonitorInvoiceAndHtlcTxAction(ctx context.Context,
 
 			// If the htlc has confirmed and the timeout path has
 			// opened up we sweep the funds back to us.
-			err = f.cfg.DepositManager.TransitionDeposits(
-				ctx, f.loopIn.Deposits,
-				deposit.OnSweepingHtlcTimeout,
-				deposit.SweepHtlcTimeout,
-			)
-			if err != nil {
-				log.Errorf("unable to transition "+
-					"deposits to the htlc timeout "+
-					"sweeping state: %v", err)
-			}
+			transitionDepositsToHtlcTimeout("htlc timeout")
 
 			return OnSweepHtlcTimeout
 

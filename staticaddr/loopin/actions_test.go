@@ -18,6 +18,7 @@ import (
 	"github.com/lightninglabs/loop/swap"
 	"github.com/lightninglabs/loop/swapserverrpc"
 	"github.com/lightninglabs/loop/test"
+	"github.com/lightningnetwork/lnd/chainntnfs"
 	"github.com/lightningnetwork/lnd/invoices"
 	"github.com/lightningnetwork/lnd/lntypes"
 	"github.com/lightningnetwork/lnd/zpay32"
@@ -294,6 +295,130 @@ func TestMonitorInvoiceAndHtlcTxNoOpOnShutdown(t *testing.T) {
 
 	default:
 	}
+}
+
+// TestMonitorInvoiceAndHtlcTxLocksConfirmedHtlcOnDeadline verifies that once
+// the server-published HTLC is confirmed, an unpaid invoice deadline keeps the
+// deposits locked for the timeout sweep instead of unlocking them for reuse.
+func TestMonitorInvoiceAndHtlcTxLocksConfirmedHtlcOnDeadline(t *testing.T) {
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+	defer cancel()
+
+	runCtx, stop := context.WithCancel(ctx)
+	defer stop()
+
+	mockLnd := test.NewMockLnd()
+
+	clientKey, err := btcec.NewPrivateKey()
+	require.NoError(t, err)
+	serverKey, err := btcec.NewPrivateKey()
+	require.NoError(t, err)
+
+	swapHash := lntypes.Hash{7, 8, 9}
+	dep := &deposit.Deposit{
+		OutPoint: wire.OutPoint{
+			Hash:  chainhash.Hash{7},
+			Index: 0,
+		},
+		Value: 200_000,
+	}
+	dep.SetState(deposit.LoopingIn)
+
+	loopIn := &StaticAddressLoopIn{
+		SwapHash:              swapHash,
+		HtlcCltvExpiry:        mockLnd.Height + 100,
+		InitiationHeight:      uint32(mockLnd.Height),
+		InitiationTime:        time.Now(),
+		ProtocolVersion:       version.ProtocolVersion_V0,
+		ClientPubkey:          clientKey.PubKey(),
+		ServerPubkey:          serverKey.PubKey(),
+		PaymentTimeoutSeconds: 1,
+		Deposits:              []*deposit.Deposit{dep},
+	}
+	loopIn.SetState(MonitorInvoiceAndHtlcTx)
+
+	mockLnd.Invoices[swapHash] = &lndclient.Invoice{
+		Hash:  swapHash,
+		State: invoices.ContractOpen,
+	}
+
+	transitionChan := make(chan depositTransition, 1)
+	depositMgr := &recordingDepositManager{
+		transitionChan: transitionChan,
+	}
+	cfg := &Config{
+		AddressManager: &mockAddressManager{
+			params: &script.Parameters{
+				ClientPubkey:    clientKey.PubKey(),
+				ServerPubkey:    serverKey.PubKey(),
+				ProtocolVersion: version.ProtocolVersion_V0,
+			},
+		},
+		ChainNotifier:  mockLnd.ChainNotifier,
+		DepositManager: depositMgr,
+		InvoicesClient: mockLnd.LndServices.Invoices,
+		LndClient:      mockLnd.Client,
+		ChainParams:    mockLnd.ChainParams,
+	}
+
+	f, err := NewFSM(runCtx, loopIn, cfg, false)
+	require.NoError(t, err)
+
+	resultChan := make(chan fsm.EventType, 1)
+	go func() {
+		resultChan <- f.MonitorInvoiceAndHtlcTxAction(runCtx, nil)
+	}()
+
+	select {
+	case <-mockLnd.SingleInvoiceSubcribeChannel:
+	case <-ctx.Done():
+		t.Fatalf("invoice subscription not registered: %v", ctx.Err())
+	}
+
+	select {
+	case <-mockLnd.RegisterConfChannel:
+	case <-ctx.Done():
+		t.Fatalf("htlc conf registration not received: %v", ctx.Err())
+	}
+
+	htlc, err := loopIn.getHtlc(mockLnd.ChainParams)
+	require.NoError(t, err)
+
+	tx := wire.NewMsgTx(2)
+	tx.AddTxOut(&wire.TxOut{
+		PkScript: htlc.PkScript,
+	})
+
+	mockLnd.ConfChannel <- &chainntnfs.TxConfirmation{
+		Tx:          tx,
+		BlockHeight: uint32(mockLnd.Height),
+	}
+
+	select {
+	case transition := <-transitionChan:
+		require.Equal(
+			t, deposit.OnSweepingHtlcTimeout, transition.event,
+		)
+		require.Equal(t, deposit.SweepHtlcTimeout, transition.state)
+		require.Equal(t, []*deposit.Deposit{dep}, transition.deposits)
+
+	case <-ctx.Done():
+		t.Fatalf("deposit was not locked for HTLC timeout: %v",
+			ctx.Err())
+	}
+
+	stop()
+
+	select {
+	case event := <-resultChan:
+		require.Equal(t, fsm.NoOp, event)
+
+	case <-ctx.Done():
+		t.Fatalf("monitor action did not exit: %v", ctx.Err())
+	}
+
+	require.Nil(t, f.LastActionError)
+	require.Len(t, depositMgr.transitions, 1)
 }
 
 // TestSweepHtlcTimeoutActionNoOpOnShutdown ensures that a shutdown during
@@ -760,8 +885,9 @@ type depositTransition struct {
 type recordingDepositManager struct {
 	noopDepositManager
 
-	err         error
-	transitions []depositTransition
+	err            error
+	transitions    []depositTransition
+	transitionChan chan depositTransition
 }
 
 // TransitionDeposits records the transition and returns the configured error.
@@ -769,11 +895,19 @@ func (r *recordingDepositManager) TransitionDeposits(_ context.Context,
 	deposits []*deposit.Deposit, event fsm.EventType,
 	state fsm.StateType) error {
 
-	r.transitions = append(r.transitions, depositTransition{
+	transition := depositTransition{
 		deposits: deposits,
 		event:    event,
 		state:    state,
-	})
+	}
+	r.transitions = append(r.transitions, transition)
+
+	if r.transitionChan != nil {
+		select {
+		case r.transitionChan <- transition:
+		default:
+		}
+	}
 
 	return r.err
 }
