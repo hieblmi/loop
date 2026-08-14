@@ -6,6 +6,9 @@
 
 #### Bug Fixes
 
+* Instant Out fee-limit rejection now cancels the server-side swap created
+  before client validation, releasing its hold invoice and reservations.
+
 * Loop Out requests now account for channel reserves when checking outbound
   capacity, preventing swaps from starting when their off-chain payment cannot
   be funded.

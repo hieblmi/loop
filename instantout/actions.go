@@ -173,7 +173,7 @@ func (f *FSM) InitInstantOutAction(ctx context.Context,
 	if err := validateInstantOutInvoiceAmount(
 		payReq.Value, reservationAmt, initCtx.maxSwapFee,
 	); err != nil {
-		return f.HandleError(err)
+		return f.handleErrorAndCancelInstantOut(ctx, swapHash, err)
 	}
 	serverPubkey, err := btcec.ParsePubKey(instantOutResponse.SenderKey)
 	if err != nil {
@@ -746,25 +746,7 @@ func (f *FSM) handleErrorAndUnlockReservations(ctx context.Context,
 		}
 	}
 
-	// We're also sending the server a cancel message so that it can
-	// release the reservations. This can be done in a goroutine as we
-	// wan't to fail the fsm early.
-	go func() {
-		cancelCtx, cancel := context.WithTimeout(
-			context.WithoutCancel(ctx), time.Second*30,
-		)
-		defer cancel()
-		_, cancelErr := f.cfg.InstantOutClient.CancelInstantSwap(
-			cancelCtx, &swapserverrpc.CancelInstantSwapRequest{
-				SwapHash: f.InstantOut.SwapHash[:],
-			},
-		)
-		if cancelErr != nil {
-			// We'll log the error but not return it as we want to return the
-			// original error.
-			f.Debugf("error sending cancel message: %v", cancelErr)
-		}
-	}()
+	f.cancelInstantOut(ctx, f.InstantOut.SwapHash)
 
 	// Preserve the action failure when cleanup also fails. If cleanup was
 	// the only failure, report it to the state machine.
@@ -773,6 +755,37 @@ func (f *FSM) handleErrorAndUnlockReservations(ctx context.Context,
 	}
 
 	return f.HandleError(unlockErr)
+}
+
+// handleErrorAndCancelInstantOut cancels server state created before the
+// client was able to persist and lock its local instant out.
+func (f *FSM) handleErrorAndCancelInstantOut(ctx context.Context,
+	swapHash lntypes.Hash, actionErr error) fsm.EventType {
+
+	f.cancelInstantOut(ctx, swapHash)
+
+	return f.HandleError(actionErr)
+}
+
+// cancelInstantOut asks the server to release an instant out asynchronously so
+// the client can report its original action error without waiting for cleanup.
+func (f *FSM) cancelInstantOut(ctx context.Context, swapHash lntypes.Hash) {
+	go func() {
+		cancelCtx, cancel := context.WithTimeout(
+			context.WithoutCancel(ctx), time.Second*30,
+		)
+		defer cancel()
+		_, cancelErr := f.cfg.InstantOutClient.CancelInstantSwap(
+			cancelCtx, &swapserverrpc.CancelInstantSwapRequest{
+				SwapHash: swapHash[:],
+			},
+		)
+		if cancelErr != nil {
+			// We'll log the error but not return it as we want to return the
+			// original error.
+			f.Debugf("error sending cancel message: %v", cancelErr)
+		}
+	}()
 }
 
 func getMaxRoutingFee(amt btcutil.Amount) btcutil.Amount {
