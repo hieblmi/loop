@@ -9,6 +9,7 @@ import (
 	"github.com/lightninglabs/loop/fsm"
 	"github.com/lightninglabs/loop/instantout/reservation"
 	"github.com/lightninglabs/loop/swapserverrpc"
+	"github.com/lightningnetwork/lnd/lntypes"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 )
@@ -28,14 +29,19 @@ func (m *cleanupTestReservationManager) UnlockReservation(context.Context,
 type cleanupTestInstantOutClient struct {
 	swapserverrpc.InstantSwapServerClient
 
-	canceled chan struct{}
+	canceled chan lntypes.Hash
 }
 
-func (c *cleanupTestInstantOutClient) CancelInstantSwap(context.Context,
-	*swapserverrpc.CancelInstantSwapRequest, ...grpc.CallOption) (
+func (c *cleanupTestInstantOutClient) CancelInstantSwap(_ context.Context,
+	req *swapserverrpc.CancelInstantSwapRequest, _ ...grpc.CallOption) (
 	*swapserverrpc.CancelInstantSwapResponse, error) {
 
-	close(c.canceled)
+	swapHash, err := lntypes.MakeHash(req.SwapHash)
+	if err != nil {
+		return nil, err
+	}
+
+	c.canceled <- swapHash
 	return &swapserverrpc.CancelInstantSwapResponse{}, nil
 }
 
@@ -44,7 +50,7 @@ func (c *cleanupTestInstantOutClient) CancelInstantSwap(context.Context,
 func TestCleanupPreservesActionError(t *testing.T) {
 	actionErr := errors.New("action failed")
 	cancelClient := &cleanupTestInstantOutClient{
-		canceled: make(chan struct{}),
+		canceled: make(chan lntypes.Hash, 1),
 	}
 	instantOutFSM := &FSM{
 		StateMachine: &fsm.StateMachine{},
@@ -70,6 +76,37 @@ func TestCleanupPreservesActionError(t *testing.T) {
 		select {
 		case <-cancelClient.canceled:
 			return true
+		default:
+			return false
+		}
+	}, time.Second, time.Millisecond)
+}
+
+// TestInitErrorCancelsServerSwap verifies that an initialization failure after
+// the server creates a swap cancels the correct server-side hash.
+func TestInitErrorCancelsServerSwap(t *testing.T) {
+	actionErr := errors.New("action failed")
+	cancelClient := &cleanupTestInstantOutClient{
+		canceled: make(chan lntypes.Hash, 1),
+	}
+	instantOutFSM := &FSM{
+		StateMachine: &fsm.StateMachine{},
+		cfg: &Config{
+			InstantOutClient: cancelClient,
+		},
+	}
+	swapHash := lntypes.Hash{1, 2, 3}
+
+	event := instantOutFSM.handleErrorAndCancelInstantOut(
+		t.Context(), swapHash, actionErr,
+	)
+	require.Equal(t, fsm.OnError, event)
+	require.ErrorIs(t, instantOutFSM.LastActionError, actionErr)
+	require.Eventually(t, func() bool {
+		select {
+		case canceledHash := <-cancelClient.canceled:
+			return canceledHash == swapHash
+
 		default:
 			return false
 		}
